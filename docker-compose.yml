@@ -8,10 +8,23 @@ services:
     environment:
       PORT: 6104
       DATA_DIR: /data
+    # Nginx Proxy Manager reaches the container through its network:
+    # Forward Hostname "listom", Forward Port 6104.
+    expose:
+      - "6104"
+    networks:
+      - npm
+    # Also reachable from the host itself only (handy for checks), never
+    # from outside: the public access goes through NPM.
     ports:
-      - "${LISTOM_PORT:-6104}:6104"
+      - "127.0.0.1:${LISTOM_PORT:-6104}:6104"
     volumes:
       - listom-data:/data
+
+networks:
+  npm:
+    external: true
+    name: ${NPM_NETWORK:-npm_default}
 
 volumes:
   listom-data:

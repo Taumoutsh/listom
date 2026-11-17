@@ -34,17 +34,35 @@ Quand un cadeau a un lien mais pas d'image, le serveur va chercher l'image de la
 
 ## Déployer avec Docker
 
-Prérequis : Docker avec Docker Compose.
+Prérequis : Docker avec Docker Compose, et [Nginx Proxy Manager](https://nginxproxymanager.com/) (NPM) installé avec Docker sur la même machine.
+
+Listom rejoint le réseau Docker de NPM : NPM le joint par son nom de conteneur, sans ouvrir de port sur Internet.
 
 ```bash
 git clone https://github.com/taumoutsh/listom.git
 cd listom
 cp .env.example .env
-# Ouvrez .env et choisissez ADMIN_PASSWORD : sans lui, aucune liste ne peut être créée
+docker network ls        # repérez le réseau de NPM (souvent npm_default)
+nano .env                # ADMIN_PASSWORD et NPM_NETWORK
 docker compose up -d --build
 ```
 
-Listom répond ensuite sur `http://votre-serveur:6104`. Changez le port avec `LISTOM_PORT` dans `.env`.
+Sans `ADMIN_PASSWORD`, aucune liste ne peut être créée.
+
+Dans NPM, ajoutez un **Proxy Host** :
+
+| Champ | Valeur |
+| --- | --- |
+| Domain Names | `listes.votre-domaine.fr` |
+| Scheme | `http` |
+| Forward Hostname / IP | `listom` |
+| Forward Port | `6104` |
+| SSL | certificat Let's Encrypt, *Force SSL* |
+| Advanced | `proxy_buffering off;` (mises à jour en direct sans retard) |
+
+Le port 6104 est aussi ouvert sur la machine elle-même (`127.0.0.1` uniquement), pour vérifier : `curl http://127.0.0.1:6104/api/health`.
+
+Si NPM tourne en mode réseau `host`, ou sans NPM : retirez les blocs `networks` de `docker-compose.yml` et remplacez `127.0.0.1:` par rien dans `ports` pour publier le port.
 
 ### Mettre à jour
 
@@ -66,9 +84,9 @@ docker run --rm -v listom_listom-data:/data -v "$PWD":/backup alpine \
 
 Le nom exact du volume s'affiche avec `docker volume ls`.
 
-### HTTPS
+### Autre proxy HTTPS
 
-Mettez Listom derrière un proxy HTTPS et réglez `TRUST_PROXY=true` dans `.env`. Exemple avec Caddy (`Caddyfile`) :
+Avec un autre proxy, gardez `TRUST_PROXY=true` dans `.env`. Exemple avec Caddy installé sur la machine (`Caddyfile`) :
 
 ```
 listes.votre-site.fr {
@@ -76,16 +94,17 @@ listes.votre-site.fr {
 }
 ```
 
-Si le proxy met les réponses en mémoire tampon (Nginx), désactivez-la pour `/api/lists/*/events` (`proxy_buffering off;`), sinon les mises à jour en direct arrivent en retard.
+Si le proxy met les réponses en mémoire tampon (Nginx), désactivez-la (`proxy_buffering off;`), sinon les mises à jour en direct arrivent en retard.
 
 ## Configuration (`.env`)
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
 | `ADMIN_PASSWORD` | *(vide)* | Mot de passe de `/admin`, où se créent les liens de création. Vide : administration désactivée. |
-| `LISTOM_PORT` | `6104` | Port publié sur la machine hôte. |
+| `NPM_NETWORK` | `npm_default` | Réseau Docker de Nginx Proxy Manager, que Listom rejoint. |
+| `LISTOM_PORT` | `6104` | Port ouvert sur la machine elle-même (`127.0.0.1`), pour les vérifications. |
 | `INVITE_DAYS` | `30` | Durée de validité d'un lien de création, en jours. |
-| `TRUST_PROXY` | `false` | `true` derrière un proxy : lit `X-Forwarded-Proto` et `X-Forwarded-For`. |
+| `TRUST_PROXY` | `true` | `true` derrière un proxy (NPM) : lit `X-Forwarded-Proto` et `X-Forwarded-For`. |
 | `COOKIE_SECURE` | `auto` | Cookies `Secure` : `auto` (selon HTTPS), `true` ou `false`. |
 | `SESSION_DAYS` | `30` | Durée de connexion au mode Vœux sur un appareil. |
 | `AUTO_LINK_IMAGE` | `true` | Récupère l'image de la page d'un cadeau à partir de son lien. |
