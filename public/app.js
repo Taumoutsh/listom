@@ -44,7 +44,7 @@
     lutinName: LS.get("listom.lutinName", ""),
     unlocked: false,                              // Mode Vœux session (server cookie)
     pwDraft: "", pwErr: "", pwBusy: false,
-    loaded: false, slow: false, fatal: "", notFound: false,
+    loaded: false, fatal: "", notFound: false,
     list: { name: "", welcomeTitle: DEFAULTS.welcomeTitle, welcomeSubtitle: DEFAULTS.welcomeSubtitle, heroUpload: null },
     gifts: [], reservations: [],
     canWrite: true,
@@ -90,8 +90,8 @@
     refreshing = Promise.resolve(refreshing).then(async () => {
       try {
         await Promise.all([wantList ? loadList() : null, wantRes ? loadReservations() : null]);
-        state.slow = false; state.fatal = "";
-      } catch (e) { state.slow = true; }
+        state.fatal = "";
+      } catch (e) { /* offline for now: the next event or reconnection retries */ }
       render();
     });
     return refreshing;
@@ -110,8 +110,9 @@
       if (d.scope === "deleted") { listGone(); return; }
       refresh(d.scope ? [d.scope] : null);
     });
-    events.addEventListener("open", () => { if (opened) refresh(); opened = true; if (state.slow) { state.slow = false; render(); } });
-    events.addEventListener("error", () => { if (!state.slow && !state.notFound) { state.slow = true; render(); } });
+    // The browser reconnects by itself after a network cut; once back, reload
+    // the list quietly to catch up on what changed meanwhile.
+    events.addEventListener("open", () => { if (opened) refresh(); opened = true; });
   }
 
   function listGone() {
@@ -304,7 +305,6 @@
     const gifts = sortedGifts();
     html += hero(gifts);
     if (state.fatal) html += '<p class="notice">' + esc(state.fatal) + "</p>";
-    if (state.slow) html += '<p class="notice">Connexion au serveur perdue : la liste affichée n\'est peut-être pas à jour. Reconnexion en cours…</p>';
     html += toolbar(gifts);
 
     let shown = gifts;
