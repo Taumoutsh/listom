@@ -25,7 +25,9 @@ Un lien de création ne sert qu'une fois et expire au bout de `INVITE_DAYS` jour
 | `/<identifiant>/edit` | Lien d'édition : le mode Vœux, protégé par le mot de passe de la liste. |
 | `/admin` | Administration : liens de création, et toutes les listes avec un nouveau mot de passe ou la suppression pour chacune. Protégée par `ADMIN_PASSWORD`. |
 
-En mode Vœux, la roue crantée ouvre les paramètres de la liste :
+En mode Vœux, le bouton **Aperçu** montre la page telle que la voient les proches (en-tête, guirlande, cadeaux), sans aucune réservation : la surprise est préservée.
+
+La roue crantée ouvre les paramètres de la liste :
 - nom de la liste, titre et sous-titre d'accueil (des mots entourés d'astérisques, comme `Il y a aussi *les boules*…`, s'affichent en couleur) ;
 - image d'accueil ;
 - lien de diffusion et lien d'édition ;

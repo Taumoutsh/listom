@@ -342,3 +342,12 @@ a.btn { text-decoration: none; }
   .garland { height: 92px; }
   .ornament svg { transform: scale(1.12); transform-origin: 50% 0; }
 }
+
+/* ---------- Preview (Mode Vœux) ---------- */
+.preview-bar { position: sticky; top: calc(8px + env(safe-area-inset-top, 0px)); z-index: 5; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--accent); border-radius: 14px; padding: 10px 12px 10px 14px; box-shadow: var(--shadow); }
+.preview-bar > svg { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.preview-bar p { margin: 0; flex: 1; min-width: min(100%, 220px); font-size: 14px; color: var(--muted); }
+.preview-bar b { color: var(--ink); }
+.btn.inert { pointer-events: none; cursor: default; }
+span.chip { cursor: default; }

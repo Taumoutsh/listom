@@ -50,7 +50,8 @@
     canWrite: true,
     open: null,          // { id, kind: "reserve" | "release" }
     draftName: "",
-    histOpen: new Set()
+    histOpen: new Set(),
+    preview: false       // Mode Vœux: show the list as givers see it, reservations left out
   };
 
   /* ---------- Derived data ---------- */
@@ -194,8 +195,15 @@
       (state.mode === "voeux" ? '<span class="mode-tag">' + ICONS.gift + "Mode Vœux</span>" : "") + "</div>";
   }
 
+  // Preview (Mode Vœux): a reminder above the page, with the way back.
+  function previewBar() {
+    return '<div class="preview-bar" role="status">' + ICONS.eye +
+      "<p><b>Aperçu.</b> Voici la page que voient vos proches. Les réservations restent cachées : la surprise est préservée.</p>" +
+      '<button class="btn primary" data-action="preview-exit">Quitter l\'aperçu</button></div>';
+  }
+
   function hero(gifts) {
-    if (state.mode === "lutin") {   // givers: the list's header, then the gifts (no counters)
+    if (state.mode === "lutin" || state.preview) {   // givers: the list's header, then the gifts (no counters)
       return listHeader() + (window.ListomGarland ? window.ListomGarland() : "") + '<h2 class="hotte-title">À mettre dans la hotte</h2>';
     }
     const total = gifts.reduce((s, g) => s + (typeof g.price === "number" ? g.price : 0), 0);
@@ -206,9 +214,15 @@
   }
 
   function toolbar(gifts) {
+    if (state.preview) {   // same chips as givers, inert, every gift shown as available
+      return '<div class="toolbar"><div class="chips" aria-hidden="true">' +
+        [["Tous", gifts.length, true], ["À offrir", gifts.length, false], ["Réservés", 0, false]]
+          .map(([l, n, on]) => '<span class="chip" aria-pressed="' + on + '">' + l + " · " + n + "</span>").join("") + "</div></div>";
+    }
     if (state.mode === "voeux") {
       return '<div class="toolbar">' +
         '<button class="btn icon-btn" data-action="settings" aria-label="Paramètres de la liste" title="Paramètres de la liste">' + ICONS.gear + "</button>" +
+        '<button class="btn ghost" data-action="preview">' + ICONS.eye + "Aperçu</button>" +
         '<button class="btn ghost" data-action="lock">' + ICONS.lock + "Verrouiller</button>" +
         '<button class="btn primary push" data-action="new">' + ICONS.plus + "Ajouter un vœu</button></div>";
     }
@@ -252,14 +266,19 @@
     return html + historyBlock(g);
   }
 
+  // In the preview every gift looks available, and its button does nothing.
+  function previewFoot() {
+    return '<div class="row"><span class="pill free">Disponible</span><span class="btn primary inert" aria-hidden="true">' + ICONS.gift + "Je l'offre</span></div>";
+  }
+
   // Mode Vœux never shows reservations: the list owner keeps the surprise.
   function voeuxFoot(g) {
     return state.canWrite ? '<div class="actions"><button class="btn" data-action="edit" data-id="' + esc(g.id) + '">' + ICONS.pen + "Modifier</button></div>" : "";
   }
 
   function card(g) {
-    const isL = state.mode === "lutin";
-    const cur = isL ? currentOf(g.id) : null;
+    const isL = state.mode === "lutin" || state.preview;
+    const cur = state.mode === "lutin" ? currentOf(g.id) : null;   // never in Mode Vœux, preview included
     const price = fmtPrice(g.price);
     const link = safeUrl(g.link || "");
     const extra = (price ? '<span class="tag">' + esc(price) + "</span>" : "") + (cur ? '<span class="ribbon">Réservé</span>' : "");
@@ -270,11 +289,11 @@
       '<div class="body"><h3>' + esc(g.title) + "</h3>" +
       (g.description ? '<p class="desc">' + esc(g.description) + "</p>" : "") +
       (link ? '<a class="link" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">' + ICONS.ext + "<span>" + esc(domainOf(link)) + "</span></a>" : "") +
-      '<div class="foot">' + (isL ? lutinFoot(g, cur) : voeuxFoot(g)) + "</div></div></article>";
+      '<div class="foot">' + (state.preview ? previewFoot() : isL ? lutinFoot(g, cur) : voeuxFoot(g)) + "</div></div></article>";
   }
 
   function emptyState() {
-    if (state.mode === "voeux") {
+    if (state.mode === "voeux" && !state.preview) {
       return '<div class="empty"><span class="big" aria-hidden="true">🎁</span><h2>Votre liste est vide</h2>' +
         "<p>Ajoutez un premier vœu : un titre suffit. Un lien, un prix et une image aident vos proches à trouver le bon cadeau.</p>" +
         (state.canWrite ? '<button class="btn primary" data-action="new">' + ICONS.plus + "Ajouter un vœu</button>" : "") + "</div>";
@@ -303,6 +322,7 @@
       return;
     }
     const gifts = sortedGifts();
+    if (state.preview) html += previewBar();
     html += hero(gifts);
     if (state.fatal) html += '<p class="notice">' + esc(state.fatal) + "</p>";
     html += toolbar(gifts);
@@ -330,7 +350,9 @@
     const el = e.target.closest("[data-action]");
     if (!el || el.tagName === "INPUT") return;
     const a = el.dataset.action, id = el.dataset.id;
-    if (a === "filter") { state.filter = el.dataset.filter; LS.set("listom.filter", state.filter); render(); }
+    if (a === "preview") { state.preview = true; render(); window.scrollTo(0, 0); }
+    else if (a === "preview-exit") { state.preview = false; render(); window.scrollTo(0, 0); }
+    else if (a === "filter") { state.filter = el.dataset.filter; LS.set("listom.filter", state.filter); render(); }
     else if (a === "new") openEditor(null);
     else if (a === "edit") openEditor(state.gifts.find((g) => g.id === id) || null);
     else if (a === "reserve") {
@@ -421,6 +443,7 @@
     }
   });
   app.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.preview) { state.preview = false; render(); }
     if (e.key === "Escape" && state.open) { state.open = null; render(); }
   });
 
