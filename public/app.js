@@ -234,7 +234,13 @@
     const chips = [["all", "Tous", gifts.length], ["free", "À offrir", free], ["taken", "Réservés", gifts.length - free]];
     return '<div class="toolbar"><div class="chips" role="group" aria-label="Filtrer">' +
       chips.map(([k, l, n]) => '<button class="chip" data-action="filter" data-filter="' + k + '" aria-pressed="' + (state.filter === k) + '">' + l + " · " + n + "</button>").join("") +
-      "</div>" + (state.lutinName ? '<span class="fine">Vous réservez en tant que <b>' + esc(state.lutinName) + "</b></span>" : "") + "</div>";
+      "</div>" + '<div class="tool-group push">' +
+      (state.lutinName ? '<span class="fine">Vous réservez en tant que <b>' + esc(state.lutinName) + "</b></span>" : "") +
+      '<button class="btn ghost icon-on-mobile" data-action="share" aria-label="Partager la liste" title="Partager la liste">' + ICONS.share + '<span class="btn-label">Partager</span></button>' +
+      "</div></div>" +
+      // Shown only when neither the share sheet nor copying worked.
+      (state.shareLink ? '<div class="secret"><span class="secret-label">Lien de la liste</span><div class="secret-row"><code id="share-link">' + esc(listUrl()) + "</code>" +
+        '<button class="btn" data-action="copy-share">' + ICONS.copy + 'Copier</button><button class="btn ghost" data-action="share-close">Fermer</button></div></div>' : "");
   }
 
   function historyBlock(g) {
@@ -355,6 +361,8 @@
     if (!el || el.tagName === "INPUT") return;
     const a = el.dataset.action, id = el.dataset.id;
     if (a === "share") shareList();
+    else if (a === "copy-share") copyText(listUrl(), document.getElementById("share-link"));
+    else if (a === "share-close") { state.shareLink = false; render(); }
     else if (a === "preview") { state.preview = true; render(); window.scrollTo(0, 0); }
     else if (a === "preview-exit") { state.preview = false; render(); window.scrollTo(0, 0); }
     else if (a === "filter") { state.filter = el.dataset.filter; LS.set("listom.filter", state.filter); render(); }
@@ -703,21 +711,21 @@
 
   function listUrl() { return window.Listom.listUrl(LIST_ID); }
 
-  // Share the givers' link: the phone's own share sheet where there is one
-  // (Messages, WhatsApp, e-mail…), otherwise copy the link. If copying is
-  // refused too, the settings sheet shows the link to copy by hand.
+  // Share the givers' link, from Mode Vœux (the owner's own list) or from the
+  // givers' page (passing it on): the phone's own share sheet where there is
+  // one (Messages, WhatsApp, e-mail…), otherwise copy the link. If copying is
+  // refused too, show the link to copy by hand.
   async function shareList() {
-    const url = listUrl(), name = plainTitle(state.list.name);
+    const url = listUrl(), name = plainTitle(state.list.name), owner = state.mode === "voeux";
+    const text = (owner ? "Voici ma liste de vœux « " : "Voici la liste de vœux « ") + name + " » : choisissez un cadeau et réservez-le à votre nom.";
     if (navigator.share) {
-      try {
-        await navigator.share({ title: name, text: "Voici ma liste de vœux « " + name + " » : choisissez un cadeau et réservez-le à votre nom.", url });
-        return;
-      } catch (e) {
-        if (e && e.name === "AbortError") return;   // the person closed the share sheet
-      }
+      try { await navigator.share({ title: name, text, url }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }   // the person closed the share sheet
     }
-    if (await copyText(url)) toast("Lien copié : envoyez-le à vos proches pour qu'ils réservent leurs cadeaux.");
-    else openSettings();
+    if (await copyText(url)) {
+      toast(owner ? "Lien copié : envoyez-le à vos proches pour qu'ils réservent leurs cadeaux." : "Lien copié : envoyez-le à d'autres lutins.");
+    } else if (owner) openSettings();
+    else { state.shareLink = true; render(); }
   }
   function editUrl() { return window.Listom.editUrl(LIST_ID); }
 
