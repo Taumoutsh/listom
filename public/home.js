@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  const { LS, esc, richTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, listUrl } = window.Listom;
+  const { esc, richTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, href, listUrl, editUrl } = window.Listom;
   if (!["home", "create", "notfound"].includes(route.kind)) return;
 
   const app = document.getElementById("app");
@@ -13,7 +13,7 @@
     const lists = myLists.all();
     if (!lists.length) return "";
     return '<section class="mine"><h2 class="section-title">Vos listes sur cet appareil</h2><ul>' +
-      lists.map((l) => '<li><a href="/' + encodeURIComponent(l.id) + '">' + ICONS.gift + "<span>" + esc(l.name) + "</span></a></li>").join("") +
+      lists.map((l) => '<li><a href="' + href.edit(l.id) + '">' + ICONS.gift + "<span>" + esc(l.name) + "</span></a></li>").join("") +
       "</ul></section>";
   }
 
@@ -90,11 +90,14 @@
         (c.imageFailed ? '<p class="notice">L\'image n\'a pas pu être envoyée. Vous pourrez la changer dans les paramètres du mode Vœux.</p>' : "") +
         '<div class="secret"><span class="secret-label">Lien de diffusion</span>' +
           '<div class="secret-row"><code id="r-link">' + esc(listUrl(c.id)) + '</code><button type="button" class="btn" data-a="copy-link">' + ICONS.copy + "Copier</button></div>" +
-          '<p class="fine">Envoyez ce lien à vos proches : ils choisiront le mode Lutin pour réserver un cadeau.</p></div>' +
+          '<p class="fine">Envoyez ce lien à vos proches : ils y réservent leurs cadeaux.</p></div>' +
+        '<div class="secret"><span class="secret-label">Lien d\'édition (pour vous)</span>' +
+          '<div class="secret-row"><code id="r-edit">' + esc(editUrl(c.id)) + '</code><button type="button" class="btn" data-a="copy-edit">' + ICONS.copy + "Copier</button></div>" +
+          '<p class="fine">Gardez-le : c\'est là que vous ajoutez et modifiez vos vœux, avec le mot de passe ci-dessous.</p></div>' +
         '<div class="secret important"><span class="secret-label">Mot de passe du mode Vœux</span>' +
           '<div class="secret-row"><code id="r-pw">' + esc(c.password) + '</code><button type="button" class="btn" data-a="copy-pw">' + ICONS.copy + "Copier</button></div>" +
           "<p class=\"fine\"><b>Gardez-le précieusement : il ne sera plus affiché.</b> Il permet de modifier la liste depuis un autre appareil. Vous pourrez en générer un nouveau dans les paramètres du mode Vœux.</p></div>" +
-        '<a class="btn primary big" href="/' + encodeURIComponent(c.id) + '" data-a="open">' + ICONS.gift + "Ouvrir ma liste</a>" +
+        '<a class="btn primary big" href="' + href.edit(c.id) + '">' + ICONS.gift + "Ajouter mes vœux</a>" +
       "</div>";
   }
 
@@ -134,8 +137,8 @@
     const a = el.dataset.a;
     if (a === "default-hero") { setFile(null); render(); }
     else if (a === "copy-link") copyText(listUrl(state.created.id), document.getElementById("r-link"));
+    else if (a === "copy-edit") copyText(editUrl(state.created.id), document.getElementById("r-edit"));
     else if (a === "copy-pw") copyText(state.created.password, document.getElementById("r-pw"));
-    else if (a === "open") LS.set("listom.mode." + state.created.id, "voeux");   // the creator lands in Mode Vœux
   });
 
   app.addEventListener("submit", async (e) => {

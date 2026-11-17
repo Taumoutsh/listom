@@ -2,11 +2,10 @@
 (function () {
   "use strict";
 
-  const { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, myLists, route } = window.Listom;
+  const { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, myLists, route, href } = window.Listom;
   if (route.kind !== "list") return;
   const LIST_ID = route.id;
   const API = "/api/lists/" + encodeURIComponent(LIST_ID);
-  const MODE_KEY = "listom.mode." + LIST_ID;   // the chosen mode is remembered per list
 
   /* ---------- Small helpers ---------- */
   const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -39,7 +38,8 @@
 
   /* ---------- State ---------- */
   const state = {
-    mode: LS.get(MODE_KEY, null),                 // "voeux" | "lutin"
+    // The address decides: /<id> is for givers, /<id>/edit for the owner.
+    mode: route.edit ? "voeux" : "lutin",
     filter: LS.get("listom.filter", "all"),
     lutinName: LS.get("listom.lutinName", ""),
     unlocked: false,                              // Mode Vœux session (server cookie)
@@ -158,46 +158,8 @@
         '<button class="btn primary" type="submit"' + (state.pwBusy ? " disabled" : "") + ">Déverrouiller</button>" +
       "</form>" +
       (state.pwErr ? '<p class="err" role="alert">' + esc(state.pwErr) + "</p>" : "") +
-      '<button class="btn ghost" data-action="pick-mode" data-mode="lutin" data-no-confirm="1">Je veux plutôt offrir un cadeau</button>' +
+      '<a class="btn ghost" href="' + href.list(LIST_ID) + '">Je veux plutôt offrir un cadeau</a>' +
       '<p class="fine">Mot de passe perdu ? L\'administrateur du site peut en générer un nouveau.</p></div>';
-  }
-
-  function setMode(mode) {
-    state.mode = mode; LS.set(MODE_KEY, mode); state.open = null;
-    if (mode !== "lutin") state.reservations = [];
-    render(); window.scrollTo(0, 0);
-    if (mode === "lutin") refresh(["reservations"]);
-  }
-
-  // In-page confirmation (the viewer blocks window.confirm). The safe choice,
-  // staying in Mode Vœux, is the highlighted button and gets the focus.
-  function confirmSwitchToLutin() {
-    const prevFocus = document.activeElement;
-    const root = document.createElement("div");
-    root.innerHTML =
-      '<div class="overlay center" data-c="backdrop"><div class="sheet dialog" role="alertdialog" aria-modal="true" aria-labelledby="c-title" aria-describedby="c-desc">' +
-        '<span class="gate-ico">' + ICONS.elf + "</span>" +
-        '<h2 id="c-title">Passer en mode Lutin ?</h2>' +
-        '<p id="c-desc">Le mode Lutin montre quels cadeaux sont réservés et par qui. Si cette liste est la vôtre, vous découvrirez vos surprises.</p>' +
-        '<div class="dialog-actions"><button class="btn primary" data-c="stay">Rester en mode Vœux</button><button class="btn" data-c="go">Oui, je suis un lutin</button></div>' +
-      "</div></div>";
-    document.body.appendChild(root);
-    document.documentElement.classList.add("modal-open");
-    const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); close(); } };
-    const close = () => {
-      root.remove();
-      document.removeEventListener("keydown", onKey, true);
-      if (!draft) document.documentElement.classList.remove("modal-open");
-      try { if (prevFocus && prevFocus.focus) prevFocus.focus({ preventScroll: true }); } catch (e) {}
-    };
-    document.addEventListener("keydown", onKey, true);
-    root.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-c]");
-      if (!t || (t.dataset.c === "backdrop" && e.target !== t)) return;
-      close();
-      if (t.dataset.c === "go") setMode("lutin");
-    });
-    root.querySelector('[data-c="stay"]').focus();
   }
 
   /* ---------- Rendering ---------- */
@@ -211,52 +173,35 @@
       (extra || "") + "</div>";
   }
 
-  function onboarding() {
+  // The list's welcome header, shown above the gifts on the givers' page.
+  function listHeader() {
     const l = state.list;
-    return '<div class="onboard">' +
-      '<div class="brand">' + LOGO + "Listom</div>" +
-      '<div class="hero"><span class="eyebrow">' + esc(l.name) + "</span>" +
-        '<div class="onboard-hero">' + heroPicture(heroSrc(l.heroUpload)) + "<h1>" + richTitle(l.welcomeTitle) + "</h1></div>" +
-        '<p class="lead">' + esc(l.welcomeSubtitle) + "</p></div>" +
-      '<div class="choices">' +
-        '<button class="choice" data-action="pick-mode" data-mode="voeux">' +
-          '<span class="ico">' + ICONS.gift + '</span><span class="mode-name">Mode Vœux</span>' +
-          "<strong>Je fais ma liste</strong><p>Ajoutez les cadeaux qui vous font envie. Vous ne verrez jamais qui offre quoi : la surprise reste entière.</p></button>" +
-        '<button class="choice" data-action="pick-mode" data-mode="lutin">' +
-          '<span class="ico alt">' + ICONS.elf + '</span><span class="mode-name">Mode Lutin</span>' +
-          "<strong>J'offre un cadeau</strong><p>Parcourez la liste, choisissez un cadeau et réservez-le à votre nom.</p></button>" +
-      "</div>" +
-      '<p class="fine">Votre choix est retenu sur cet appareil. Vous pourrez changer de mode à tout moment en haut de la page.</p>' +
-    "</div>";
+    return '<header class="hero list-header"><span class="eyebrow">' + esc(l.name) + "</span>" +
+      '<div class="onboard-hero">' + heroPicture(heroSrc(l.heroUpload)) + "<h1>" + richTitle(l.welcomeTitle) + "</h1></div>" +
+      '<p class="lead">' + esc(l.welcomeSubtitle) + "</p></header>";
   }
 
   function notFoundPage() {
     return '<div class="gate"><span class="gate-ico">' + ICONS.gift + "</span>" +
       '<span class="eyebrow">Listom</span><h1>Liste introuvable</h1>' +
-      "<p>Cette liste n'existe pas ou a été supprimée. Vérifiez le lien reçu, ou créez votre propre liste.</p>" +
-      '<a class="btn primary" href="/">Créer une liste</a></div>';
+      "<p>Cette liste n'existe pas ou a été supprimée. Vérifiez le lien que vous avez reçu.</p>" +
+      '<a class="btn primary" href="/">Retour à l\'accueil</a></div>';
   }
 
   function topbar() {
-    const m = state.mode;
     return '<div class="topbar"><div class="brand">' + LOGO + "Listom</div>" +
-      '<div class="modes" role="group" aria-label="Mode">' +
-        '<button data-action="pick-mode" data-mode="voeux" aria-pressed="' + (m === "voeux") + '">' + ICONS.gift + "Vœux</button>" +
-        '<button data-action="pick-mode" data-mode="lutin" aria-pressed="' + (m === "lutin") + '">' + ICONS.elf + "Lutin</button>" +
-      "</div></div>";
+      (state.mode === "voeux" ? '<span class="mode-tag">' + ICONS.gift + "Mode Vœux</span>" : "") + "</div>";
   }
 
   function hero(gifts) {
-    const isV = state.mode === "voeux";
-    let summary = "";
-    if (isV) {   // Mode Lutin shows no counters, only the gifts
-      const total = gifts.reduce((s, g) => s + (typeof g.price === "number" ? g.price : 0), 0);
-      const parts = ["<span><b>" + gifts.length + "</b> " + (gifts.length > 1 ? "vœux" : "vœu") + "</span>"];
-      if (total > 0) parts.push("<span>Total <b>" + esc(fmtPrice(total)) + "</b></span>");
-      summary = '<div class="summary">' + parts.join("") + "</div>";
+    if (state.mode === "lutin") {   // givers: the list's header, then the gifts (no counters)
+      return listHeader() + '<h2 class="hotte-title">À mettre dans la hotte</h2>';
     }
-    return '<div class="hero"><span class="eyebrow">' + (isV ? "Mode Vœux · votre liste" : "Mode Lutin · À mettre dans la hotte") + "</span>" +
-      '<div class="list-title"><h1>' + esc(state.list.name) + "</h1></div>" + summary + "</div>";
+    const total = gifts.reduce((s, g) => s + (typeof g.price === "number" ? g.price : 0), 0);
+    const parts = ["<span><b>" + gifts.length + "</b> " + (gifts.length > 1 ? "vœux" : "vœu") + "</span>"];
+    if (total > 0) parts.push("<span>Total <b>" + esc(fmtPrice(total)) + "</b></span>");
+    return '<div class="hero"><span class="eyebrow">Mode Vœux · votre liste</span>' +
+      '<div class="list-title"><h1>' + esc(state.list.name) + "</h1></div>" + '<div class="summary">' + parts.join("") + "</div></div>";
   }
 
   function toolbar(gifts) {
@@ -334,7 +279,7 @@
         (state.canWrite ? '<button class="btn primary" data-action="new">' + ICONS.plus + "Ajouter un vœu</button>" : "") + "</div>";
     }
     return '<div class="empty"><span class="big" aria-hidden="true">🧝</span><h2>Aucun vœu pour l\'instant</h2>' +
-      "<p>La liste n'a pas encore de cadeaux. Revenez un peu plus tard, ou passez en mode Vœux si c'est votre liste.</p></div>";
+      "<p>La liste n'a pas encore de cadeaux. Revenez un peu plus tard : elle se met à jour toute seule.</p></div>";
   }
 
   function render() {
@@ -348,7 +293,6 @@
       return;
     }
     if (state.notFound) { app.innerHTML = notFoundPage(); return; }
-    if (!state.mode) { app.innerHTML = onboarding(); return; }
 
     let html = topbar();
     if (state.mode === "voeux" && !state.unlocked) {
@@ -386,14 +330,7 @@
     const el = e.target.closest("[data-action]");
     if (!el || el.tagName === "INPUT") return;
     const a = el.dataset.action, id = el.dataset.id;
-    if (a === "pick-mode") {
-      const target = el.dataset.mode;
-      if (target === state.mode) return;
-      // Leaving Mode Vœux for Mode Lutin reveals who gives what: ask first.
-      if (state.mode === "voeux" && target === "lutin" && !el.dataset.noConfirm) confirmSwitchToLutin();
-      else setMode(target);
-    }
-    else if (a === "filter") { state.filter = el.dataset.filter; LS.set("listom.filter", state.filter); render(); }
+    if (a === "filter") { state.filter = el.dataset.filter; LS.set("listom.filter", state.filter); render(); }
     else if (a === "new") openEditor(null);
     else if (a === "edit") openEditor(state.gifts.find((g) => g.id === id) || null);
     else if (a === "reserve") {
@@ -737,6 +674,7 @@
   }
 
   function listUrl() { return window.Listom.listUrl(LIST_ID); }
+  function editUrl() { return window.Listom.editUrl(LIST_ID); }
 
   function renderSettings(first) {
     if (!settings) return;
@@ -778,7 +716,10 @@
         "</form>" +
         '<div class="settings-section"><h3 class="section-title">Lien à partager</h3>' +
           '<div class="secret-row"><code id="s-link">' + esc(listUrl()) + '</code><button type="button" class="btn" data-s="copy-link">' + ICONS.copy + "Copier</button></div>" +
-          '<p class="fine">Envoyez ce lien à vos proches : ils choisiront le mode Lutin pour réserver un cadeau.</p></div>' +
+          '<p class="fine">Envoyez ce lien à vos proches : ils y réservent leurs cadeaux.</p></div>' +
+        '<div class="settings-section"><h3 class="section-title">Lien d\'édition</h3>' +
+          '<div class="secret-row"><code id="s-edit">' + esc(editUrl()) + '</code><button type="button" class="btn" data-s="copy-edit">' + ICONS.copy + "Copier</button></div>" +
+          '<p class="fine">Gardez-le pour vous : il ouvre ce mode Vœux, avec le mot de passe.</p></div>' +
         '<div class="settings-section"><h3 class="section-title">Mot de passe du mode Vœux</h3>' + pwBlock + "</div>" +
       "</div></div>";
 
@@ -818,6 +759,7 @@
     if (a === "close") closeSettings();
     else if (a === "default-hero") { st.heroUpload = null; renderSettings(false); }
     else if (a === "copy-link") copyText(listUrl(), document.getElementById("s-link"));
+    else if (a === "copy-edit") copyText(editUrl(), document.getElementById("s-edit"));
     else if (a === "copy-pw") copyText(st.newPassword, document.getElementById("s-pw"));
     else if (a === "regen") { st.confirmRegen = true; renderSettings(false); }
     else if (a === "regen-cancel") { st.confirmRegen = false; renderSettings(false); }

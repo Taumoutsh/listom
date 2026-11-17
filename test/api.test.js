@@ -192,6 +192,9 @@ test("static files cannot escape the public folder", async () => {
   }
   const page = await fetch(base + "/abcdefgh");
   assert.equal(page.status, 200);
+  const editPage = await fetch(base + "/abcdefgh/edit");
+  assert.equal(editPage.status, 200);
+  assert.match(editPage.headers.get("content-type"), /text\/html/);
   assert.match(page.headers.get("content-security-policy"), /script-src 'self'/);
 });
 

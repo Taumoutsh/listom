@@ -2,16 +2,16 @@
 
 Listes de cadeaux partagées, sans doublon et sans gâcher la surprise.
 
-- **Mode Vœux** : la personne gâtée compose sa liste (titre, description, lien, prix, image). Elle ne voit jamais qui offre quoi.
-- **Mode Lutin** : les proches parcourent la liste et réservent un cadeau à leur nom. Chaque changement (réservation, modification, libération) est gardé dans un historique, avec le nom et la date.
+- **Mode Lutin**, à l'adresse de la liste (`https://votre-site.fr/TJKUOd-ThhM`) : les proches voient l'accueil de la liste puis les cadeaux, et réservent celui qu'ils offrent, à leur nom. Chaque changement (réservation, modification, libération) est gardé dans un historique, avec le nom et la date.
+- **Mode Vœux**, à la même adresse suivie de `/edit` : la personne gâtée compose sa liste (titre, description, lien, prix, image), protégée par son mot de passe. Elle ne voit jamais qui offre quoi.
 
-Chaque liste a sa propre adresse, du type `https://votre-site.fr/TJKUOd-ThhM`, et son propre mot de passe généré à la création.
+Chaque liste a son propre mot de passe, généré à la création.
 
 ## Créer une liste
 
 1. Dans `/admin`, l'administrateur clique sur **Créer un lien** (le nom de la liste peut être pré-rempli). Il obtient un **lien de création**, du type `https://votre-site.fr/creer/<jeton>`, et l'envoie à la personne qui veut sa liste.
 2. Cette personne ouvre le lien et remplit le formulaire : nom de la liste, titre d'accueil, sous-titre et image.
-3. Elle obtient son **mot de passe** (affiché une seule fois) et le **lien de diffusion** de sa liste, à envoyer à ses proches.
+3. Elle obtient le **lien de diffusion** de sa liste, à envoyer à ses proches, son **lien d'édition** (`…/edit`) et son **mot de passe**, affiché une seule fois.
 
 Un lien de création ne sert qu'une fois et expire au bout de `INVITE_DAYS` jours (30 par défaut). L'administrateur voit les liens en attente et peut les révoquer.
 
@@ -21,13 +21,14 @@ Un lien de création ne sert qu'une fois et expire au bout de `INVITE_DAYS` jour
 | --- | --- |
 | `/` | Page d'accueil, simple présentation. On n'y crée pas de liste. |
 | `/creer/<jeton>` | Formulaire de création d'une liste, ouvert par un lien de création valide. |
-| `/<identifiant>` | La liste (lien de diffusion). On choisit le mode Vœux (mot de passe) ou le mode Lutin (aucun mot de passe). Le choix est retenu sur l'appareil. |
+| `/<identifiant>` | Lien de diffusion : l'accueil de la liste puis les cadeaux à réserver (mode Lutin, sans mot de passe). |
+| `/<identifiant>/edit` | Lien d'édition : le mode Vœux, protégé par le mot de passe de la liste. |
 | `/admin` | Administration : liens de création, et toutes les listes avec un nouveau mot de passe ou la suppression pour chacune. Protégée par `ADMIN_PASSWORD`. |
 
 En mode Vœux, la roue crantée ouvre les paramètres de la liste :
 - nom de la liste, titre et sous-titre d'accueil (des mots entourés d'astérisques, comme `Il y a aussi *les boules*…`, s'affichent en couleur) ;
 - image d'accueil ;
-- lien à partager ;
+- lien de diffusion et lien d'édition ;
 - génération d'un nouveau mot de passe (les autres appareils devront le saisir).
 
 Quand un cadeau a un lien mais pas d'image, le serveur va chercher l'image de la page (balises `og:image`, `twitter:image`, données produit…). S'il n'en trouve pas, un emoji choisi d'après le titre la remplace.

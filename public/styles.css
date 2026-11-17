@@ -312,3 +312,13 @@ a.btn { text-decoration: none; }
 .invite-row { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .invite-row.fresh { box-shadow: inset 0 0 0 2px var(--accent); }
 .invite-name { font-family: var(--font-display); font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+
+/* ---------- List page for givers: welcome header, then the gifts ---------- */
+.list-header { gap: 14px; padding-top: 4px; }
+.list-header h1 { font-size: clamp(34px, 6.4vw, 60px); min-width: 0; }
+.list-header h1 em { font-style: normal; color: var(--accent); }
+.list-header .lead { font-size: 18px; color: var(--muted); max-width: 52ch; margin: 0; }
+.hotte-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 3.4vw, 28px); margin: 8px 0 -6px; padding-top: 18px; border-top: 1px solid var(--line); }
+@media (max-width: 560px) { .list-header h1 { font-size: clamp(28px, 8.6vw, 42px); } }
+.mode-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; }
+.mode-tag svg { width: 15px; height: 15px; }

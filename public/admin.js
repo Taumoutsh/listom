@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  const { esc, ICONS, LOGO, toast, copyText, api, route, inviteUrl } = window.Listom;
+  const { esc, ICONS, LOGO, toast, copyText, api, route, href, inviteUrl } = window.Listom;
   if (route.kind !== "admin") return;
 
   const app = document.getElementById("app");
@@ -92,7 +92,7 @@
         '<div class="actions"><button class="btn ghost" data-a="cancel">Garder la liste</button><button class="btn primary" data-a="do-delete" data-id="' + esc(l.id) + '"' + (busy ? " disabled" : "") + ">Supprimer</button></div></div>";
     }
     return '<li class="admin-row">' +
-      '<div class="admin-main"><a class="admin-name" href="/' + encodeURIComponent(l.id) + '" target="_blank" rel="noopener">' + esc(l.name) + "</a>" +
+      '<div class="admin-main"><a class="admin-name" href="' + href.list(l.id) + '" target="_blank" rel="noopener">' + esc(l.name) + "</a>" +
         '<span class="admin-id">/' + esc(l.id) + "</span></div>" +
       '<div class="admin-meta"><span>' + plural(l.gifts, "vœu", "vœux") + "</span><span>" + plural(l.reserved, "réservé", "réservés") + "</span>" +
         "<span>Créée le " + esc(fmtDate(l.createdAt)) + "</span><span>Activité le " + esc(fmtDate(l.lastActivity)) + "</span></div>" +

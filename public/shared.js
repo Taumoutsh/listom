@@ -1,7 +1,8 @@
 // Helpers shared by the three pages of the app:
 //   /               welcome screen                     (home.js)
 //   /creer/<token>  create a list from a one-time link (home.js)
-//   /<id>           a list: Vœux / Lutin               (app.js)
+//   /<id>           a list, for givers (Mode Lutin)    (app.js)
+//   /<id>/edit      the same list, for its owner (Mode Vœux, password)
 //   /admin          administration                     (admin.js)
 (function () {
   "use strict";
@@ -97,14 +98,20 @@
   else if (path === "/admin") route = { kind: "admin" };
   else {
     const invite = path.match(/^\/creer\/([A-Za-z0-9_-]{16,64})$/);
-    const list = path.match(/^\/([A-Za-z0-9_-]{6,40})$/);
+    const list = path.match(/^\/([A-Za-z0-9_-]{6,40})(\/edit)?$/);
     if (invite) route = { kind: "create", token: invite[1] };
-    else if (list) route = { kind: "list", id: list[1] };
+    else if (list) route = { kind: "list", id: list[1], edit: Boolean(list[2]) };
   }
 
-  // Full addresses to hand out: a list's sharing link, and a creation link.
-  const listUrl = (id) => location.origin + "/" + id;
+  // Links inside the app, and full addresses to hand out: a list's sharing
+  // link (Mode Lutin), its editing link (Mode Vœux) and a creation link.
+  const href = {
+    list: (id) => "/" + encodeURIComponent(id),
+    edit: (id) => "/" + encodeURIComponent(id) + "/edit"
+  };
+  const listUrl = (id) => location.origin + href.list(id);
+  const editUrl = (id) => location.origin + href.edit(id);
   const inviteUrl = (token) => location.origin + "/creer/" + token;
 
-  window.Listom = { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, listUrl, inviteUrl };
+  window.Listom = { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, href, listUrl, editUrl, inviteUrl };
 })();
