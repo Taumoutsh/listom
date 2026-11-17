@@ -85,6 +85,10 @@ docker run --rm -v listom_listom-data:/data -v "$PWD":/backup alpine \
 
 Le nom exact du volume s'affiche avec `docker volume ls`.
 
+### Cloudflare
+
+Listom fonctionne derrière Cloudflare (en plus de NPM). La page n'est jamais mise en cache, et ses scripts sont appelés avec un numéro de version (`/app.js?v=…`) : après une mise à jour, Cloudflare sert forcément les nouveaux fichiers. Gardez la mise en cache par défaut de Cloudflare (la chaîne de requête fait partie de la clé de cache).
+
 ### Autre proxy HTTPS
 
 Avec un autre proxy, gardez `TRUST_PROXY=true` dans `.env`. Exemple avec Caddy installé sur la machine (`Caddyfile`) :

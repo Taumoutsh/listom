@@ -569,7 +569,25 @@ function createApp(env = process.env) {
     send(res, 200, data, { "Content-Type": MIME[path.extname(name)], "Cache-Control": "public, max-age=31536000, immutable" });
   });
 
+  // The page refers to its scripts and styles with a version taken from their
+  // content (/app.js?v=…): after an update the addresses change, so no cache
+  // in between (browser, Cloudflare, proxy) can serve an old file.
+  const versioned = new Map();
+  const pageHtml = () => {
+    const html = fs.readFileSync(path.join(PUBLIC_DIR, "index.html"), "utf8");
+    return Buffer.from(html.replace(/(src|href)="\/([\w.-]+\.(?:js|css|svg))"/g, (all, attr, name) => {
+      if (!versioned.has(name)) {
+        try { versioned.set(name, crypto.createHash("sha1").update(fs.readFileSync(path.join(PUBLIC_DIR, name))).digest("hex").slice(0, 10)); }
+        catch (e) { return all; }
+      }
+      return attr + '="/' + name + "?v=" + versioned.get(name) + '"';
+    }));
+  };
+  const PAGE = pageHtml();
+  const sendPage = (req, res) => send(res, 200, req.method === "HEAD" ? "" : PAGE, { "Content-Type": MIME[".html"], "Cache-Control": "no-cache, no-store" });
+
   const serveStatic = async (req, res, pathname) => {
+    if (pathname === "/" || pathname === "/index.html") return sendPage(req, res);
     let rel;
     try { rel = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, ""); }
     catch (e) { throw new HttpError(404, "Page introuvable."); }
@@ -579,9 +597,8 @@ function createApp(env = process.env) {
     try { data = await fsp.readFile(file); }
     catch (e) {
       if (path.extname(rel)) throw new HttpError(404, "Fichier introuvable.");
-      // /admin, /<list id>…: the page routes itself.
-      data = await fsp.readFile(path.join(PUBLIC_DIR, "index.html"));
-      return send(res, 200, req.method === "HEAD" ? "" : data, { "Content-Type": MIME[".html"], "Cache-Control": "no-cache" });
+      // /admin, /<list id>, /<list id>/edit…: the page routes itself.
+      return sendPage(req, res);
     }
     // Pages, scripts and styles are revalidated on every visit (ETag), so an
     // update reaches browsers at once instead of mixing old and new files.
