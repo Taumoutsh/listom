@@ -372,5 +372,10 @@ span.chip { cursor: default; }
   .splash .mine ul { justify-content: center; }
 }
 
-/* The list's name above its welcome title (givers' page and preview). */
-.list-header .list-name { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(19px, 2.6vw, 26px); line-height: 1.2; color: var(--accent); text-wrap: balance; overflow-wrap: anywhere; }
+/* The list's name on a gift tag above its welcome title (givers' page and
+   preview): the shape and hole of the cards' price tags, slightly tilted. */
+.list-tag { align-self: flex-start; max-width: 100%; transform: rotate(-2deg); transform-origin: left center; filter: drop-shadow(0 1px 1px rgba(29, 26, 43, .08)) drop-shadow(0 6px 12px rgba(29, 26, 43, .12)); margin: 4px 0 6px; }
+.list-tag .list-name { position: relative; margin: 0; padding: 8px 18px 8px 32px; background: var(--surface); color: var(--ink);
+  font-family: var(--font-display); font-weight: 700; font-size: clamp(17px, 2.1vw, 21px); line-height: 1.25; overflow-wrap: anywhere;
+  border-radius: 4px 10px 10px 4px; clip-path: polygon(16px 0, 100% 0, 100% 100%, 16px 100%, 0 50%); }
+.list-tag .list-name::before { content: ""; position: absolute; left: 13px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--line); }
