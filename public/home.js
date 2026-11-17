@@ -48,10 +48,16 @@
     busy: false, err: "", created: null      // { id, name, password, imageFailed }
   };
 
+  // Live preview of the page the creator's relatives will see: the name on its
+  // gift tag, picture and welcome title, subtitle, garland, then the gifts.
   function previewHtml() {
-    return '<div class="preview-card" aria-hidden="true"><span class="eyebrow">' + esc(state.name || "Les vœux de Camille") + "</span>" +
-      '<div class="onboard-hero">' + heroPicture(state.previewUrl || heroSrc(null)) + "<h2>" + richTitle(state.welcomeTitle || DEFAULTS.welcomeTitle) + "</h2></div>" +
-      '<p class="lead">' + esc(state.welcomeSubtitle || DEFAULTS.welcomeSubtitle) + "</p></div>";
+    return '<div class="preview-card" aria-hidden="true">' +
+      '<div class="hero list-header"><div class="list-tag"><p class="list-name">' + esc(state.name || "Les vœux de Camille") + "</p></div>" +
+        '<div class="onboard-hero">' + heroPicture(state.previewUrl || heroSrc(null)) + "<h2>" + richTitle(state.welcomeTitle || DEFAULTS.welcomeTitle) + "</h2></div>" +
+        '<p class="lead">' + esc(state.welcomeSubtitle || DEFAULTS.welcomeSubtitle) + "</p></div>" +
+      (window.ListomGarland ? window.ListomGarland() : "") +
+      '<p class="hotte-title">À mettre dans la hotte</p>' +
+      '<p class="preview-gifts">Vos vœux apparaîtront ici.</p></div>';
   }
 
   function goneView() {
@@ -78,7 +84,7 @@
           '<button class="btn primary big" type="submit"' + (state.busy ? " disabled" : "") + ">" + (state.busy ? "Création…" : "Créer ma liste") + "</button>" +
           '<p class="fine">Ce lien ne sert qu\'une fois. Un mot de passe vous sera donné pour modifier la liste : il protège le mode Vœux.</p>' +
         "</form>" +
-        '<aside class="create-preview"><span class="label">Aperçu de l\'accueil</span><div id="preview">' + previewHtml() + "</div></aside>" +
+        '<aside class="create-preview"><span class="label">Aperçu de la page de vos proches</span><div id="preview">' + previewHtml() + "</div></aside>" +
       "</div>";
   }
 
