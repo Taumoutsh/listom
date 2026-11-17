@@ -24,11 +24,13 @@ img { max-width: 100%; }
   --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --r: 14px;
+  --garland: #B3AFC0;
+  --garland-soft: #D9D6E2;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #13111B; --surface: #1C1928; --sunken: #252135; --ink: #EEEBF7; --muted: #A49FB8; --line: #2F2A40;
-    --accent: #F0679A; --accent-ink: #22101A; --accent-soft: #3B1828; --ok: #52C99C; --ok-soft: #14322A; --gold: #E5B54C;
+    --accent: #F0679A; --accent-ink: #22101A; --accent-soft: #3B1828; --ok: #52C99C; --ok-soft: #14322A; --gold: #E5B54C; --garland: #59546A; --garland-soft: #3B3749;
     --t1: #3A1E2A; --t2: #1C2840; --t3: #1A3326; --t4: #3A2C14; --t5: #2A2140; --t6: #17333A;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
     color-scheme: dark;
@@ -36,7 +38,7 @@ img { max-width: 100%; }
 }
 :root[data-theme="dark"] {
   --bg: #13111B; --surface: #1C1928; --sunken: #252135; --ink: #EEEBF7; --muted: #A49FB8; --line: #2F2A40;
-  --accent: #F0679A; --accent-ink: #22101A; --accent-soft: #3B1828; --ok: #52C99C; --ok-soft: #14322A; --gold: #E5B54C;
+  --accent: #F0679A; --accent-ink: #22101A; --accent-soft: #3B1828; --ok: #52C99C; --ok-soft: #14322A; --gold: #E5B54C; --garland: #59546A; --garland-soft: #3B3749;
   --t1: #3A1E2A; --t2: #1C2840; --t3: #1A3326; --t4: #3A2C14; --t5: #2A2140; --t6: #17333A;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
   color-scheme: dark;
@@ -322,3 +324,21 @@ a.btn { text-decoration: none; }
 @media (max-width: 560px) { .list-header h1 { font-size: clamp(28px, 8.6vw, 42px); } }
 .mode-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; }
 .mode-tag svg { width: 15px; height: 15px; }
+
+/* ---------- Garland separator (Mode Lutin, between header and gifts) ---------- */
+.garland { position: relative; height: 84px; margin-top: 4px; }
+.garland-string { position: absolute; left: 0; top: 0; width: 100%; height: 48px; overflow: visible; }
+.garland-string path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.garland-string .twine { stroke: var(--garland); }
+.garland-string .twine-twist { stroke: var(--garland-soft); stroke-dasharray: 3 5; }
+.garland-pin { position: absolute; transform: translate(-50%, -50%); line-height: 0; }
+.ornament { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 0;
+  transform: translateX(-50%); }
+.ornament .thread { width: 1.5px; height: var(--len, 8px); background: var(--garland); }
+.ornament svg { display: block; }
+@media (max-width: 600px) { .ornament.extra { display: none; } .garland { height: 80px; } }
+.garland + .hotte-title { border-top: 0; padding-top: 0; margin-top: 0; }
+@media (min-width: 800px) {
+  .garland { height: 92px; }
+  .ornament svg { transform: scale(1.12); transform-origin: 50% 0; }
+}

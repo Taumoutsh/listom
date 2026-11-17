@@ -196,7 +196,7 @@
 
   function hero(gifts) {
     if (state.mode === "lutin") {   // givers: the list's header, then the gifts (no counters)
-      return listHeader() + '<h2 class="hotte-title">À mettre dans la hotte</h2>';
+      return listHeader() + (window.ListomGarland ? window.ListomGarland() : "") + '<h2 class="hotte-title">À mettre dans la hotte</h2>';
     }
     const total = gifts.reduce((s, g) => s + (typeof g.price === "number" ? g.price : 0), 0);
     const parts = ["<span><b>" + gifts.length + "</b> " + (gifts.length > 1 ? "vœux" : "vœu") + "</span>"];
