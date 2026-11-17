@@ -26,7 +26,7 @@ const DEFAULT_WELCOME_SUBTITLE = "Une liste de vœux partagée : chacun réserve
 
 function readConfig(env) {
   return {
-    port: Number(env.PORT) || 3000,
+    port: Number(env.PORT) || 6104,
     host: env.HOST || "0.0.0.0",
     adminPassword: env.ADMIN_PASSWORD || "",
     creationCode: env.CREATION_CODE || "",

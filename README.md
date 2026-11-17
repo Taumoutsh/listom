@@ -35,7 +35,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Listom répond ensuite sur `http://votre-serveur:3000`. Changez le port avec `LISTOM_PORT` dans `.env`.
+Listom répond ensuite sur `http://votre-serveur:6104`. Changez le port avec `LISTOM_PORT` dans `.env`.
 
 ### Mettre à jour
 
@@ -63,7 +63,7 @@ Mettez Listom derrière un proxy HTTPS et réglez `TRUST_PROXY=true` dans `.env`
 
 ```
 listes.votre-site.fr {
-    reverse_proxy 127.0.0.1:3000
+    reverse_proxy 127.0.0.1:6104
 }
 ```
 
@@ -74,7 +74,7 @@ Si le proxy met les réponses en mémoire tampon (Nginx), désactivez-la pour `/
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
 | `ADMIN_PASSWORD` | *(vide)* | Mot de passe de `/admin`. Vide : administration désactivée. |
-| `LISTOM_PORT` | `3000` | Port publié sur la machine hôte. |
+| `LISTOM_PORT` | `6104` | Port publié sur la machine hôte. |
 | `CREATION_CODE` | *(vide)* | Si défini, code à saisir pour créer une liste. Vide : création libre. |
 | `TRUST_PROXY` | `false` | `true` derrière un proxy : lit `X-Forwarded-Proto` et `X-Forwarded-For`. |
 | `COOKIE_SECURE` | `auto` | Cookies `Secure` : `auto` (selon HTTPS), `true` ou `false`. |
@@ -101,7 +101,7 @@ Node.js 20 ou plus récent, aucune dépendance à installer.
 
 ```bash
 cp .env.example .env
-npm run dev      # http://localhost:3000, relance automatique
+npm run dev      # http://localhost:6104, relance automatique
 npm test         # tests de l'API
 ```
 

@@ -6,10 +6,10 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      PORT: 3000
+      PORT: 6104
       DATA_DIR: /data
     ports:
-      - "${LISTOM_PORT:-3000}:3000"
+      - "${LISTOM_PORT:-6104}:6104"
     volumes:
       - listom-data:/data
 
