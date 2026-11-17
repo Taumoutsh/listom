@@ -74,7 +74,7 @@
         '<form class="create-form" id="create" novalidate>' +
           '<div class="field"><label for="c-name">Nom de la liste</label><input class="field-input" id="c-name" maxlength="80" required placeholder="Les vœux de Camille" value="' + esc(state.name) + '"></div>' +
           '<div class="field"><label for="c-title">Titre d\'accueil</label><input class="field-input" id="c-title" maxlength="120" value="' + esc(state.welcomeTitle) + '">' +
-            '<span class="hint">Entourez des mots d\'astérisques pour les colorer : Il y a aussi *les boules*…</span></div>' +
+            '<span class="hint">Entourez des mots d\'astérisques pour les colorer : Ma liste au *Père Noël*</span></div>' +
           '<div class="field"><label for="c-sub">Sous-titre</label><textarea class="field-input" id="c-sub" maxlength="300">' + esc(state.welcomeSubtitle) + "</textarea></div>" +
           '<div class="field"><span class="label">Image d\'accueil</span>' +
             '<div class="actions"><label class="btn upload" for="c-file">' + (state.file ? "Changer l'image" : "Choisir une image") + '<input type="file" id="c-file" accept="image/png,image/jpeg,image/webp,image/gif"></label>' +

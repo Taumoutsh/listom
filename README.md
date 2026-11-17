@@ -28,7 +28,7 @@ Un lien de création ne sert qu'une fois et expire au bout de `INVITE_DAYS` jour
 En mode Vœux, le bouton **Aperçu** montre la page telle que la voient les proches (en-tête, guirlande, cadeaux), sans aucune réservation : la surprise est préservée.
 
 La roue crantée ouvre les paramètres de la liste :
-- nom de la liste, titre et sous-titre d'accueil (des mots entourés d'astérisques, comme `Il y a aussi *les boules*…`, s'affichent en couleur) ;
+- nom de la liste, titre et sous-titre d'accueil (des mots entourés d'astérisques, comme `Ma liste au *Père Noël*`, s'affichent en couleur) ;
 - image d'accueil ;
 - lien de diffusion et lien d'édition ;
 - génération d'un nouveau mot de passe (les autres appareils devront le saisir).

@@ -730,7 +730,7 @@
           '<div class="fields">' +
             '<div class="field full"><label for="s-name">Nom de la liste</label><input class="field-input" id="s-name" maxlength="80" required value="' + esc(st.name) + '"></div>' +
             '<div class="field full"><label for="s-title">Titre d\'accueil</label><input class="field-input" id="s-title" maxlength="120" value="' + esc(st.welcomeTitle) + '">' +
-              '<span class="hint">Entourez des mots d\'astérisques pour les colorer : Il y a aussi *les boules*…</span></div>' +
+              '<span class="hint">Entourez des mots d\'astérisques pour les colorer : Ma liste au *Père Noël*</span></div>' +
             '<div class="field full"><label for="s-sub">Sous-titre</label><textarea class="field-input" id="s-sub" maxlength="300">' + esc(st.welcomeSubtitle) + "</textarea></div>" +
             '<div class="field full"><span class="label">Image d\'accueil</span><div class="hero-pick">' + heroPicture(heroSrc(st.heroUpload)) +
               '<div class="actions"><label class="btn upload" for="s-file">Changer l\'image<input type="file" id="s-file" accept="image/png,image/jpeg,image/webp,image/gif"></label>' +

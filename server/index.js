@@ -22,7 +22,7 @@ const TOKEN = "([A-Za-z0-9_-]{16,64})";
 const ADMIN_COOKIE = "listom_admin";
 const listCookie = (id) => "listom_v_" + id;
 
-const DEFAULT_WELCOME_TITLE = "Il y a aussi *les boules*…";
+const DEFAULT_WELCOME_TITLE = "Ma liste au *Père Noël*";
 const DEFAULT_WELCOME_SUBTITLE = "Une liste de vœux partagée : chacun réserve ce qu'il offre, et la personne gâtée garde la surprise.";
 
 function readConfig(env) {

@@ -66,7 +66,7 @@ test("creating a list returns its link id and a generated password", async () =>
   const { list, password } = await createList(owner);
   assert.match(list.id, /^[A-Za-z0-9_-]{6,40}$/);
   assert.match(password, /^[a-z2-9]{4}-[a-z2-9]{4}-[a-z2-9]{4}$/);
-  assert.equal(list.welcomeTitle, "Il y a aussi *les boules*…");
+  assert.equal(list.welcomeTitle, "Ma liste au *Père Noël*");
   const session = await owner("GET", "/api/lists/" + list.id + "/session");
   assert.equal(session.body.voeux, true, "the creator is signed in to Mode Vœux");
   const stored = fs.readFileSync(path.join(dataDir, "db.json"), "utf8");

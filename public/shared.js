@@ -14,7 +14,7 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   // Words wrapped in *asterisks* are shown in the accent colour:
-  // "Il y a aussi *les boules*…".
+  // "Ma liste au *Père Noël*".
   const richTitle = (s) => esc(s).replace(/\*([^*]+)\*/g, "<em>$1</em>");
   const plainTitle = (s) => String(s || "").replace(/\*/g, "");
 
@@ -44,7 +44,7 @@
   const heroSrc = (upload) => upload ? "/uploads/" + encodeURIComponent(upload) : "/hero.svg";
 
   const DEFAULTS = {
-    welcomeTitle: "Il y a aussi *les boules*…",
+    welcomeTitle: "Ma liste au *Père Noël*",
     welcomeSubtitle: "Une liste de vœux partagée : chacun réserve ce qu'il offre, et la personne gâtée garde la surprise."
   };
 
