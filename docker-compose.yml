@@ -1,0 +1,17 @@
+services:
+  listom:
+    build: .
+    image: listom:latest
+    container_name: listom
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 3000
+      DATA_DIR: /data
+    ports:
+      - "${LISTOM_PORT:-3000}:3000"
+    volumes:
+      - listom-data:/data
+
+volumes:
+  listom-data:

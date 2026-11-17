@@ -1,0 +1,16 @@
+{
+  "name": "listom",
+  "version": "1.0.0",
+  "description": "Listes de cadeaux partagées : le mode Vœux pour composer sa liste, le mode Lutin pour réserver un cadeau à offrir.",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch --env-file-if-exists=.env server/index.js",
+    "test": "node --test"
+  }
+}
