@@ -371,3 +371,6 @@ span.chip { cursor: default; }
   .splash .mine { align-items: center; width: 100%; max-width: 640px; }
   .splash .mine ul { justify-content: center; }
 }
+
+/* The list's name above its welcome title (givers' page and preview). */
+.list-header .list-name { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(19px, 2.6vw, 26px); line-height: 1.2; color: var(--accent); text-wrap: balance; overflow-wrap: anywhere; }

@@ -178,7 +178,7 @@
   // The list's welcome header, shown above the gifts on the givers' page.
   function listHeader() {
     const l = state.list;
-    return '<header class="hero list-header"><span class="eyebrow">' + esc(l.name) + "</span>" +
+    return '<header class="hero list-header"><p class="list-name">' + esc(l.name) + "</p>" +
       '<div class="onboard-hero">' + heroPicture(heroSrc(l.heroUpload)) + "<h1>" + richTitle(l.welcomeTitle) + "</h1></div>" +
       '<p class="lead">' + esc(l.welcomeSubtitle) + "</p></header>";
   }
