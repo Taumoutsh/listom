@@ -69,7 +69,7 @@
         "<h1>Administration désactivée</h1><p>Définissez ADMIN_PASSWORD dans le fichier .env du serveur, puis redémarrez Listom.</p></div>";
     }
     return '<div class="gate"><span class="gate-ico">' + ICONS.lock + '</span><span class="eyebrow">Administration</span>' +
-      "<h1>Accès réservé</h1><p>Saisissez le mot de passe d'administration défini dans le fichier .env.</p>" +
+      "<h1>Accès réservé</h1>" +
       '<form class="gate-form" id="login" novalidate><label for="a-pw" class="sr">Mot de passe d\'administration</label>' +
       '<input class="field-input" id="a-pw" type="password" autocomplete="current-password" placeholder="Mot de passe" value="' + esc(state.pw) + '">' +
       '<button class="btn primary" type="submit"' + (state.busy ? " disabled" : "") + ">Se connecter</button></form>" +
