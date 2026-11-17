@@ -28,10 +28,11 @@
   }
 
   // ---- Welcome screen: nothing to do here but open a link ---------------------
+  const SPLASH_TITLE = "Des idées très *hotte*";
   if (route.kind === "home") {
     document.title = "Listom";
     app.innerHTML = '<div class="onboard splash">' + brand.replace('<div class="topbar">', '<div class="topbar splash-top">') +
-      '<div class="hero"><div class="onboard-hero">' + heroPicture(heroSrc(null)) + "<h1>" + richTitle(DEFAULTS.welcomeTitle) + "</h1></div>" +
+      '<div class="hero"><div class="onboard-hero">' + heroPicture(heroSrc(null)) + "<h1>" + richTitle(SPLASH_TITLE) + "</h1></div>" +
         '<p class="lead">Des listes de vœux partagées : la personne gâtée compose sa liste, ses proches réservent ce qu\'ils offrent, et personne n\'achète deux fois le même cadeau.</p></div>' +
       '<div class="splash-note">' + ICONS.link + "<p><b>Vous avez reçu un lien ?</b> Ouvrez-le directement : il mène à une liste, ou au formulaire pour créer la vôtre.</p></div>" +
       mine() + "</div>";

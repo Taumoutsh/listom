@@ -358,3 +358,16 @@ span.chip { cursor: default; }
   .btn.icon-on-mobile svg { width: 20px; height: 20px; }
   .btn.icon-on-mobile .btn-label { display: none; }
 }
+
+/* Welcome screen: centred on wider screens. */
+@media (min-width: 700px) {
+  .splash { align-items: center; text-align: center; }
+  .splash .topbar { justify-content: center; }
+  .splash .hero { align-items: center; }
+  .splash .onboard-hero { justify-content: center; }
+  .splash .onboard-hero h1 { text-align: left; }
+  .splash .lead { margin-inline: auto; }
+  .splash-note { text-align: left; }
+  .splash .mine { align-items: center; width: 100%; max-width: 640px; }
+  .splash .mine ul { justify-content: center; }
+}
