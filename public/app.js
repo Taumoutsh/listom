@@ -736,7 +736,7 @@
     if (settingsFocus && settingsFocus.focus) try { settingsFocus.focus(); } catch (e) {}
   }
 
-  function listUrl() { return location.origin + "/" + LIST_ID; }
+  function listUrl() { return window.Listom.listUrl(LIST_ID); }
 
   function renderSettings(first) {
     if (!settings) return;

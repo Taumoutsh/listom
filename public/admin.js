@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  const { esc, ICONS, LOGO, toast, copyText, api, route } = window.Listom;
+  const { esc, ICONS, LOGO, toast, copyText, api, route, inviteUrl } = window.Listom;
   if (route.kind !== "admin") return;
 
   const app = document.getElementById("app");
@@ -17,14 +17,45 @@
     lists: [], filter: "",
     confirm: null,       // { id, kind: "reset" | "delete" }
     revealed: {},        // list id -> new password, shown once
-    working: null
+    working: null,
+    invites: [], inviteName: "", inviteBusy: false,
+    freshInvite: null,   // token of the link just created (highlighted)
+    revoking: null       // token waiting for confirmation
   };
 
   const call = (method, url, body) => api(method, url, body, () => { state.admin = false; render(); });
 
   async function loadLists() {
-    const r = await call("GET", "/api/admin/lists");
+    const [r, i] = await Promise.all([call("GET", "/api/admin/lists"), call("GET", "/api/admin/invites")]);
     state.lists = r.lists || [];
+    state.invites = i.invites || [];
+  }
+
+  // Creation links: the only way to create a list. One link, one list.
+  function invitesSection() {
+    const rows = state.invites.map((inv) => {
+      const t = inv.token, fresh = state.freshInvite === t;
+      const confirm = state.revoking === t
+        ? '<div class="inline-form"><p class="confirm-text">Révoquer ce lien ? Il ne permettra plus de créer de liste.</p>' +
+          '<div class="actions"><button class="btn ghost" data-a="revoke-cancel">Garder</button><button class="btn primary" data-a="revoke-go" data-token="' + esc(t) + '">Révoquer</button></div></div>'
+        : "";
+      return '<li class="invite-row' + (fresh ? " fresh" : "") + '">' +
+        '<div class="admin-main"><span class="invite-name">' + (inv.name ? esc(inv.name) : "Liste sans nom") + "</span>" +
+          (fresh ? '<span class="pill free">Nouveau</span>' : "") + "</div>" +
+        '<div class="admin-meta"><span>Créé le ' + esc(fmtDate(inv.createdAt)) + "</span><span>Expire le " + esc(fmtDate(inv.expiresAt)) + "</span></div>" +
+        '<div class="secret-row"><code id="inv-' + esc(t) + '">' + esc(inviteUrl(t)) + "</code>" +
+          '<button class="btn" data-a="copy-invite" data-token="' + esc(t) + '">' + ICONS.copy + "Copier</button>" +
+          (state.revoking === t ? "" : '<button class="btn ghost" data-a="revoke" data-token="' + esc(t) + '">Révoquer</button>') + "</div>" +
+        confirm + "</li>";
+    }).join("");
+    return '<section class="invites"><div class="invites-head"><h2 class="section-title">Liens de création</h2>' +
+        '<p class="fine">Envoyez un lien à la personne qui veut sa liste : il ne sert qu\'une fois et expire s\'il n\'est pas utilisé.</p></div>' +
+      '<form class="invite-form" id="invite" novalidate>' +
+        '<label for="a-invite-name" class="sr">Nom de la liste (facultatif)</label>' +
+        '<input class="field-input" id="a-invite-name" maxlength="80" placeholder="Nom de la liste (facultatif)" value="' + esc(state.inviteName) + '">' +
+        '<button class="btn primary" type="submit"' + (state.inviteBusy ? " disabled" : "") + ">" + ICONS.link + "Créer un lien</button></form>" +
+      (rows ? '<ul class="invite-list">' + rows + "</ul>" : '<p class="fine">Aucun lien en attente.</p>') +
+      "</section>";
   }
 
   function header() {
@@ -74,12 +105,13 @@
     const q = state.filter.trim().toLowerCase();
     const shown = q ? state.lists.filter((l) => l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q)) : state.lists;
     const totalGifts = state.lists.reduce((s, l) => s + l.gifts, 0);
-    return '<div class="hero"><span class="eyebrow">Administration</span><h1>Listes</h1>' +
+    return '<div class="hero"><span class="eyebrow">Administration</span><h1>Listom</h1>' +
       '<div class="summary"><span><b>' + state.lists.length + "</b> " + (state.lists.length > 1 ? "listes" : "liste") + "</span><span><b>" + totalGifts + "</b> " + (totalGifts > 1 ? "vœux" : "vœu") + " au total</span></div></div>" +
+      invitesSection() + '<h2 class="section-title">Listes</h2>' +
       (state.lists.length > 5 ? '<div class="toolbar"><input class="field-input search" id="a-filter" type="search" placeholder="Rechercher une liste" value="' + esc(state.filter) + '" aria-label="Rechercher une liste"></div>' : "") +
       (state.lists.length
         ? (shown.length ? '<ul class="admin-list">' + shown.map(row).join("") + "</ul>" : '<p class="notice">Aucune liste ne correspond à cette recherche.</p>')
-        : '<div class="empty"><h2>Aucune liste pour l\'instant</h2><p>Les listes créées depuis la page d\'accueil apparaîtront ici.</p><a class="btn primary" href="/">Créer une liste</a></div>');
+        : '<div class="empty"><h2>Aucune liste pour l\'instant</h2><p>Les listes créées avec un lien de création apparaîtront ici.</p></div>');
   }
 
   function render() {
@@ -95,10 +127,22 @@
   app.addEventListener("input", (e) => {
     if (e.target.id === "a-pw") state.pw = e.target.value;
     if (e.target.id === "a-filter") { state.filter = e.target.value; render(); }
+    if (e.target.id === "a-invite-name") state.inviteName = e.target.value;
   });
 
   app.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (e.target.id === "invite") {
+      if (state.inviteBusy) return;
+      state.inviteBusy = true; render();
+      try {
+        const r = await call("POST", "/api/admin/invites", { name: state.inviteName.trim() });
+        state.invites.unshift(r.invite); state.freshInvite = r.invite.token; state.inviteName = "";
+        toast("Lien de création prêt : copiez-le et envoyez-le.");
+      } catch (err) { toast(err.message); }
+      state.inviteBusy = false; render();
+      return;
+    }
     if (state.busy) return;
     if (!state.pw) { state.err = "Saisissez le mot de passe."; render(); return; }
     state.busy = true; state.err = ""; render();
@@ -118,6 +162,15 @@
     else if (a === "reset" || a === "delete") { state.confirm = { id, kind: a }; delete state.revealed[id]; render(); }
     else if (a === "cancel") { state.confirm = null; render(); }
     else if (a === "copy") copyText(state.revealed[id], document.getElementById("pw-" + id));
+    else if (a === "copy-invite") copyText(inviteUrl(el.dataset.token), document.getElementById("inv-" + el.dataset.token));
+    else if (a === "revoke") { state.revoking = el.dataset.token; render(); }
+    else if (a === "revoke-cancel") { state.revoking = null; render(); }
+    else if (a === "revoke-go") {
+      const t = el.dataset.token;
+      try { await call("DELETE", "/api/admin/invites/" + encodeURIComponent(t)); state.invites = state.invites.filter((i) => i.token !== t); toast("Lien révoqué."); }
+      catch (err) { toast(err.message); }
+      state.revoking = null; render();
+    }
     else if (a === "do-reset") {
       state.working = id; render();
       try { const r = await call("POST", "/api/admin/lists/" + encodeURIComponent(id) + "/password"); state.revealed[id] = r.password; state.confirm = null; }

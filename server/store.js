@@ -10,7 +10,7 @@ const fsp = fs.promises;
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const EMPTY = () => ({ version: 2, lists: [], gifts: [], reservations: [] });
+const EMPTY = () => ({ version: 2, lists: [], gifts: [], reservations: [], invites: [] });
 
 class Store {
   constructor(dataDir) {
@@ -29,7 +29,8 @@ class Store {
       version: 2,
       lists: Array.isArray(raw.lists) ? raw.lists : [],
       gifts: Array.isArray(raw.gifts) ? raw.gifts : [],
-      reservations: Array.isArray(raw.reservations) ? raw.reservations : []
+      reservations: Array.isArray(raw.reservations) ? raw.reservations : [],
+      invites: Array.isArray(raw.invites) ? raw.invites : []
     };
   }
 
@@ -97,6 +98,40 @@ class Store {
     let last = list ? list.updatedAt : "";
     for (const r of this.data.reservations) if (r.listId === id && r.at > last) last = r.at;
     return { gifts: gifts.length, reserved, lastActivity: last };
+  }
+
+  // ---- Creation links (invites) ----------------------------------------------
+  // The admin hands out a one-time link; opening it lets one person create one
+  // list. Used, revoked and expired links simply disappear.
+
+  pendingInvites() {
+    const now = new Date().toISOString();
+    this.data.invites = this.data.invites.filter((i) => i.expiresAt > now);
+    return [...this.data.invites].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+
+  getInvite(token) {
+    const invite = this.data.invites.find((i) => i.token === token);
+    return invite && invite.expiresAt > new Date().toISOString() ? invite : null;
+  }
+
+  addInvite(name, days) {
+    const now = Date.now();
+    const invite = {
+      token: crypto.randomBytes(18).toString("base64url"),
+      name,
+      createdAt: new Date(now).toISOString(),
+      expiresAt: new Date(now + days * 86400000).toISOString()
+    };
+    this.data.invites.push(invite);
+    return invite;
+  }
+
+  /** Remove an invite; returns it if it existed and was still valid. */
+  takeInvite(token) {
+    const invite = this.getInvite(token);
+    this.data.invites = this.data.invites.filter((i) => i.token !== token);
+    return invite;
   }
 
   // ---- Gifts ---------------------------------------------------------------

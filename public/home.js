@@ -1,35 +1,13 @@
-// Home page (/): create a new list, then show its link and its generated
-// password once. Also handles unknown addresses.
+// Welcome screen (/), and list creation from a one-time link handed out by
+// the administrator (/creer/<token>). Also handles unknown addresses.
 (function () {
   "use strict";
 
-  const { LS, esc, richTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route } = window.Listom;
-  if (route.kind !== "home" && route.kind !== "notfound") return;
+  const { LS, esc, richTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, listUrl } = window.Listom;
+  if (!["home", "create", "notfound"].includes(route.kind)) return;
 
   const app = document.getElementById("app");
-
-  if (route.kind === "notfound") {
-    document.title = "Page introuvable · Listom";
-    app.innerHTML = '<div class="gate"><span class="gate-ico">' + ICONS.gift + "</span>" +
-      '<span class="eyebrow">Listom</span><h1>Page introuvable</h1>' +
-      "<p>Cette adresse ne correspond à aucune liste. Vérifiez le lien reçu, ou créez votre propre liste.</p>" +
-      '<a class="btn primary" href="/">Créer une liste</a></div>';
-    return;
-  }
-
-  const state = {
-    name: "", welcomeTitle: DEFAULTS.welcomeTitle, welcomeSubtitle: DEFAULTS.welcomeSubtitle,
-    file: null, previewUrl: "", code: "", needCode: false,
-    busy: false, err: "", created: null      // { id, name, password, imageFailed }
-  };
-
-  const listUrl = (id) => location.origin + "/" + id;
-
-  function previewHtml() {
-    return '<div class="preview-card" aria-hidden="true"><span class="eyebrow">' + esc(state.name || "Les vœux de Camille") + "</span>" +
-      '<div class="onboard-hero">' + heroPicture(state.previewUrl || heroSrc(null)) + "<h2>" + richTitle(state.welcomeTitle || DEFAULTS.welcomeTitle) + "</h2></div>" +
-      '<p class="lead">' + esc(state.welcomeSubtitle || DEFAULTS.welcomeSubtitle) + "</p></div>";
-  }
+  const brand = '<div class="topbar"><div class="brand">' + LOGO + "Listom</div></div>";
 
   function mine() {
     const lists = myLists.all();
@@ -39,8 +17,50 @@
       "</ul></section>";
   }
 
+  // ---- Unknown address -----------------------------------------------------
+  if (route.kind === "notfound") {
+    document.title = "Page introuvable · Listom";
+    app.innerHTML = '<div class="gate"><span class="gate-ico">' + ICONS.gift + "</span>" +
+      '<span class="eyebrow">Listom</span><h1>Page introuvable</h1>' +
+      "<p>Cette adresse ne correspond à aucune liste. Vérifiez le lien que vous avez reçu.</p>" +
+      '<a class="btn primary" href="/">Retour à l\'accueil</a></div>';
+    return;
+  }
+
+  // ---- Welcome screen: nothing to do here but open a link ---------------------
+  if (route.kind === "home") {
+    document.title = "Listom";
+    app.innerHTML = '<div class="onboard splash">' + brand.replace('<div class="topbar">', '<div class="topbar splash-top">') +
+      '<div class="hero"><div class="onboard-hero">' + heroPicture(heroSrc(null)) + "<h1>" + richTitle(DEFAULTS.welcomeTitle) + "</h1></div>" +
+        '<p class="lead">Des listes de vœux partagées : la personne gâtée compose sa liste, ses proches réservent ce qu\'ils offrent, et personne n\'achète deux fois le même cadeau.</p></div>' +
+      '<div class="splash-note">' + ICONS.link + "<p><b>Vous avez reçu un lien ?</b> Ouvrez-le directement : il mène à une liste, ou au formulaire pour créer la vôtre.</p></div>" +
+      mine() + "</div>";
+    return;
+  }
+
+  // ---- Create a list from a creation link ---------------------------------------
+  const TOKEN = route.token;
+  const state = {
+    checking: true, gone: "",
+    name: "", welcomeTitle: DEFAULTS.welcomeTitle, welcomeSubtitle: DEFAULTS.welcomeSubtitle,
+    file: null, previewUrl: "",
+    busy: false, err: "", created: null      // { id, name, password, imageFailed }
+  };
+
+  function previewHtml() {
+    return '<div class="preview-card" aria-hidden="true"><span class="eyebrow">' + esc(state.name || "Les vœux de Camille") + "</span>" +
+      '<div class="onboard-hero">' + heroPicture(state.previewUrl || heroSrc(null)) + "<h2>" + richTitle(state.welcomeTitle || DEFAULTS.welcomeTitle) + "</h2></div>" +
+      '<p class="lead">' + esc(state.welcomeSubtitle || DEFAULTS.welcomeSubtitle) + "</p></div>";
+  }
+
+  function goneView() {
+    return brand + '<div class="gate"><span class="gate-ico">' + ICONS.link + "</span>" +
+      '<span class="eyebrow">Lien de création</span><h1>Lien plus valable</h1>' +
+      "<p>" + esc(state.gone) + "</p>" + mine() + "</div>";
+  }
+
   function formView() {
-    return '<div class="topbar"><div class="brand">' + LOGO + "Listom</div></div>" +
+    return brand +
       '<div class="hero"><span class="eyebrow">Nouvelle liste</span><h1>Créez votre liste de vœux</h1>' +
       '<p class="lead">Vos proches réservent leurs cadeaux en mode Lutin. Vous gardez la surprise en mode Vœux.</p></div>' +
       '<div class="create">' +
@@ -53,25 +73,24 @@
             '<div class="actions"><label class="btn upload" for="c-file">' + (state.file ? "Changer l'image" : "Choisir une image") + '<input type="file" id="c-file" accept="image/png,image/jpeg,image/webp,image/gif"></label>' +
             (state.file ? '<button type="button" class="btn ghost" data-a="default-hero">Image par défaut</button>' : "") + "</div>" +
             '<span class="hint">' + (state.file ? esc(state.file.name) : "Facultatif : sans image, celle de l'aperçu est utilisée.") + "</span></div>" +
-          (state.needCode ? '<div class="field"><label for="c-code">Code de création</label><input class="field-input" id="c-code" autocomplete="off" value="' + esc(state.code) + '"><span class="hint">Demandez-le à la personne qui héberge ce site.</span></div>' : "") +
           (state.err ? '<p class="err" role="alert">' + esc(state.err) + "</p>" : "") +
           '<button class="btn primary big" type="submit"' + (state.busy ? " disabled" : "") + ">" + (state.busy ? "Création…" : "Créer ma liste") + "</button>" +
-          '<p class="fine">Un mot de passe vous sera donné pour modifier la liste. Il protège le mode Vœux.</p>' +
+          '<p class="fine">Ce lien ne sert qu\'une fois. Un mot de passe vous sera donné pour modifier la liste : il protège le mode Vœux.</p>' +
         "</form>" +
         '<aside class="create-preview"><span class="label">Aperçu de l\'accueil</span><div id="preview">' + previewHtml() + "</div></aside>" +
-      "</div>" + mine();
+      "</div>";
   }
 
   function createdView() {
     const c = state.created;
-    return '<div class="topbar"><div class="brand">' + LOGO + "Listom</div></div>" +
+    return brand +
       '<div class="created">' +
         '<span class="gate-ico">' + ICONS.gift + "</span>" +
         '<span class="eyebrow">Liste créée · ' + esc(c.name) + "</span><h1>Votre liste est prête</h1>" +
         (c.imageFailed ? '<p class="notice">L\'image n\'a pas pu être envoyée. Vous pourrez la changer dans les paramètres du mode Vœux.</p>' : "") +
-        '<div class="secret"><span class="secret-label">Lien de la liste</span>' +
+        '<div class="secret"><span class="secret-label">Lien de diffusion</span>' +
           '<div class="secret-row"><code id="r-link">' + esc(listUrl(c.id)) + '</code><button type="button" class="btn" data-a="copy-link">' + ICONS.copy + "Copier</button></div>" +
-          '<p class="fine">Envoyez ce lien à vos proches.</p></div>' +
+          '<p class="fine">Envoyez ce lien à vos proches : ils choisiront le mode Lutin pour réserver un cadeau.</p></div>' +
         '<div class="secret important"><span class="secret-label">Mot de passe du mode Vœux</span>' +
           '<div class="secret-row"><code id="r-pw">' + esc(c.password) + '</code><button type="button" class="btn" data-a="copy-pw">' + ICONS.copy + "Copier</button></div>" +
           "<p class=\"fine\"><b>Gardez-le précieusement : il ne sera plus affiché.</b> Il permet de modifier la liste depuis un autre appareil. Vous pourrez en générer un nouveau dans les paramètres du mode Vœux.</p></div>" +
@@ -80,7 +99,8 @@
   }
 
   function render() {
-    app.innerHTML = state.created ? createdView() : formView();
+    if (state.checking) { app.innerHTML = brand + '<div class="hero" style="padding-block:15vh"><span class="eyebrow">Lien de création</span><h1>Vérification du lien…</h1></div>'; return; }
+    app.innerHTML = state.created ? createdView() : state.gone ? goneView() : formView();
   }
 
   function setFile(file) {
@@ -94,7 +114,6 @@
     if (id === "c-name") state.name = e.target.value;
     else if (id === "c-title") state.welcomeTitle = e.target.value;
     else if (id === "c-sub") state.welcomeSubtitle = e.target.value;
-    else if (id === "c-code") state.code = e.target.value;
     else return;
     const p = document.getElementById("preview");
     if (p) p.innerHTML = previewHtml();       // live preview, without touching the form
@@ -123,11 +142,10 @@
     e.preventDefault();
     if (state.busy) return;
     if (!state.name.trim()) { state.err = "Donnez un nom à votre liste."; render(); document.getElementById("c-name").focus(); return; }
-    if (state.needCode && !state.code.trim()) { state.err = "Saisissez le code de création."; render(); document.getElementById("c-code").focus(); return; }
     state.busy = true; state.err = ""; render();
     try {
       const r = await api("POST", "/api/lists", {
-        name: state.name.trim(), welcomeTitle: state.welcomeTitle.trim(), welcomeSubtitle: state.welcomeSubtitle.trim(), creationCode: state.code.trim()
+        invite: TOKEN, name: state.name.trim(), welcomeTitle: state.welcomeTitle.trim(), welcomeSubtitle: state.welcomeSubtitle.trim()
       });
       const created = { id: r.list.id, name: r.list.name, password: r.password, imageFailed: false };
       if (state.file) {
@@ -142,11 +160,17 @@
       render();
       window.scrollTo(0, 0);
     } catch (err) {
-      state.busy = false; state.err = err.message; render();
+      state.busy = false;
+      if (err.status === 403) state.gone = err.message;   // the link was used or revoked meanwhile
+      else state.err = err.message;
+      render();
     }
   });
 
   document.title = "Créer une liste · Listom";
   render();
-  api("GET", "/api/config").then((c) => { if (c && c.creationCode) { state.needCode = true; if (!state.created) render(); } }).catch(() => {});
+  api("GET", "/api/invites/" + encodeURIComponent(TOKEN))
+    .then((r) => { state.name = (r.invite && r.invite.name) || ""; })
+    .catch((err) => { state.gone = err.message || "Ce lien de création n'est plus valable."; })
+    .then(() => { state.checking = false; render(); });
 })();

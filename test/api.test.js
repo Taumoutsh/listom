@@ -44,8 +44,19 @@ function client() {
   };
 }
 
+let adminClient = null;
+async function newInvite(name = "") {
+  if (!adminClient) {
+    adminClient = client();
+    assert.equal((await adminClient("POST", "/api/admin/login", { password: "admin-secret" })).status, 200);
+  }
+  const r = await adminClient("POST", "/api/admin/invites", { name });
+  assert.equal(r.status, 201);
+  return r.body.invite.token;
+}
+
 async function createList(c, name = "Les vœux de Camille") {
-  const r = await c("POST", "/api/lists", { name });
+  const r = await c("POST", "/api/lists", { name, invite: await newInvite() });
   assert.equal(r.status, 201);
   return r.body;
 }
@@ -63,8 +74,28 @@ test("creating a list returns its link id and a generated password", async () =>
 });
 
 test("a list name is required", async () => {
-  const r = await client()("POST", "/api/lists", { name: "  " });
+  const r = await client()("POST", "/api/lists", { name: "  ", invite: await newInvite() });
   assert.equal(r.status, 400);
+});
+
+test("a list can only be created with a valid creation link, once", async () => {
+  const c = client();
+  assert.equal((await c("POST", "/api/lists", { name: "Sans lien" })).status, 403);
+  assert.equal((await c("POST", "/api/lists", { name: "Faux lien", invite: "abcdefghijklmnopqrstuvwx" })).status, 403);
+
+  const token = await newInvite("Les vœux de Zoé");
+  const info = await c("GET", "/api/invites/" + token);
+  assert.equal(info.status, 200);
+  assert.equal(info.body.invite.name, "Les vœux de Zoé", "the admin can pre-fill the name");
+  assert.equal((await c("POST", "/api/lists", { name: "Zoé", invite: token })).status, 201);
+  assert.equal((await c("POST", "/api/lists", { name: "Encore", invite: token })).status, 403, "single use");
+  assert.equal((await c("GET", "/api/invites/" + token)).status, 404);
+
+  const revoked = await newInvite();
+  assert.ok((await adminClient("GET", "/api/admin/invites")).body.invites.some((i) => i.token === revoked));
+  assert.equal((await adminClient("DELETE", "/api/admin/invites/" + revoked)).status, 204);
+  assert.equal((await c("POST", "/api/lists", { name: "Révoqué", invite: revoked })).status, 403);
+  assert.equal((await c("POST", "/api/admin/invites", {})).status, 401, "only the admin makes links");
 });
 
 test("only the owner edits gifts; anyone reserves; history is kept", async () => {
@@ -143,7 +174,8 @@ test("admin lists, resets and deletes lists", async () => {
 test("uploads accept real images only", async () => {
   const owner = client();
   const { list } = await createList(owner);
-  const cookie = await (async () => { const r = await fetch(base + "/api/lists", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Photos" }) }); return { id: (await r.json()).list.id, cookie: r.headers.getSetCookie()[0].split(";")[0] }; })();
+  const invite = await newInvite();
+  const cookie = await (async () => { const r = await fetch(base + "/api/lists", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Photos", invite }) }); return { id: (await r.json()).list.id, cookie: r.headers.getSetCookie()[0].split(";")[0] }; })();
   const png = Buffer.from("89504e470d0a1a0a0000000d4948445200000001000000010806000000", "hex");
   const ok = await fetch(base + "/api/lists/" + cookie.id + "/uploads", { method: "POST", headers: { cookie: cookie.cookie, "content-type": "image/png" }, body: png });
   assert.equal(ok.status, 201);

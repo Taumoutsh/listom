@@ -1,7 +1,8 @@
 // Helpers shared by the three pages of the app:
-//   /            create a list            (home.js)
-//   /<id>        a list: Vœux / Lutin     (app.js)
-//   /admin       administration           (admin.js)
+//   /               welcome screen                     (home.js)
+//   /creer/<token>  create a list from a one-time link (home.js)
+//   /<id>           a list: Vœux / Lutin               (app.js)
+//   /admin          administration                     (admin.js)
 (function () {
   "use strict";
 
@@ -27,6 +28,7 @@
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
     key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M16 7l3 3M14 9l2 2"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg>'
   };
   const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="11" width="26" height="18" rx="4" fill="var(--accent)"/><rect x="1.5" y="8" width="29" height="6" rx="2.5" fill="var(--accent)"/><rect x="14" y="8" width="4" height="21" fill="var(--surface)" opacity=".9"/><path d="M16 8c-2-4-7-6-8-3s4 3 8 3zm0 0c2-4 7-6 8-3s-4 3-8 3z" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/></svg>';
@@ -93,7 +95,16 @@
   let route = { kind: "notfound" };
   if (path === "/") route = { kind: "home" };
   else if (path === "/admin") route = { kind: "admin" };
-  else { const m = path.match(/^\/([A-Za-z0-9_-]{6,40})$/); if (m) route = { kind: "list", id: m[1] }; }
+  else {
+    const invite = path.match(/^\/creer\/([A-Za-z0-9_-]{16,64})$/);
+    const list = path.match(/^\/([A-Za-z0-9_-]{6,40})$/);
+    if (invite) route = { kind: "create", token: invite[1] };
+    else if (list) route = { kind: "list", id: list[1] };
+  }
 
-  window.Listom = { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route };
+  // Full addresses to hand out: a list's sharing link, and a creation link.
+  const listUrl = (id) => location.origin + "/" + id;
+  const inviteUrl = (token) => location.origin + "/creer/" + token;
+
+  window.Listom = { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, listUrl, inviteUrl };
 })();

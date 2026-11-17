@@ -7,13 +7,22 @@ Listes de cadeaux partagées, sans doublon et sans gâcher la surprise.
 
 Chaque liste a sa propre adresse, du type `https://votre-site.fr/TJKUOd-ThhM`, et son propre mot de passe généré à la création.
 
+## Créer une liste
+
+1. Dans `/admin`, l'administrateur clique sur **Créer un lien** (le nom de la liste peut être pré-rempli). Il obtient un **lien de création**, du type `https://votre-site.fr/creer/<jeton>`, et l'envoie à la personne qui veut sa liste.
+2. Cette personne ouvre le lien et remplit le formulaire : nom de la liste, titre d'accueil, sous-titre et image.
+3. Elle obtient son **mot de passe** (affiché une seule fois) et le **lien de diffusion** de sa liste, à envoyer à ses proches.
+
+Un lien de création ne sert qu'une fois et expire au bout de `INVITE_DAYS` jours (30 par défaut). L'administrateur voit les liens en attente et peut les révoquer.
+
 ## Les pages
 
 | Adresse | Rôle |
 | --- | --- |
-| `/` | Créer une liste : nom, titre d'accueil, sous-titre et image. Le lien et le mot de passe s'affichent une seule fois à la fin. |
-| `/<identifiant>` | La liste. On choisit le mode Vœux (mot de passe) ou le mode Lutin (aucun mot de passe). Le choix est retenu sur l'appareil. |
-| `/admin` | Administration : toutes les listes, avec un nouveau mot de passe ou la suppression pour chacune. Protégée par `ADMIN_PASSWORD`. |
+| `/` | Page d'accueil, simple présentation. On n'y crée pas de liste. |
+| `/creer/<jeton>` | Formulaire de création d'une liste, ouvert par un lien de création valide. |
+| `/<identifiant>` | La liste (lien de diffusion). On choisit le mode Vœux (mot de passe) ou le mode Lutin (aucun mot de passe). Le choix est retenu sur l'appareil. |
+| `/admin` | Administration : liens de création, et toutes les listes avec un nouveau mot de passe ou la suppression pour chacune. Protégée par `ADMIN_PASSWORD`. |
 
 En mode Vœux, la roue crantée ouvre les paramètres de la liste :
 - nom de la liste, titre et sous-titre d'accueil (des mots entourés d'astérisques, comme `Il y a aussi *les boules*…`, s'affichent en couleur) ;
@@ -31,7 +40,7 @@ Prérequis : Docker avec Docker Compose.
 git clone https://github.com/taumoutsh/listom.git
 cd listom
 cp .env.example .env
-# Ouvrez .env et choisissez au moins ADMIN_PASSWORD
+# Ouvrez .env et choisissez ADMIN_PASSWORD : sans lui, aucune liste ne peut être créée
 docker compose up -d --build
 ```
 
@@ -73,9 +82,9 @@ Si le proxy met les réponses en mémoire tampon (Nginx), désactivez-la pour `/
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
-| `ADMIN_PASSWORD` | *(vide)* | Mot de passe de `/admin`. Vide : administration désactivée. |
+| `ADMIN_PASSWORD` | *(vide)* | Mot de passe de `/admin`, où se créent les liens de création. Vide : administration désactivée. |
 | `LISTOM_PORT` | `6104` | Port publié sur la machine hôte. |
-| `CREATION_CODE` | *(vide)* | Si défini, code à saisir pour créer une liste. Vide : création libre. |
+| `INVITE_DAYS` | `30` | Durée de validité d'un lien de création, en jours. |
 | `TRUST_PROXY` | `false` | `true` derrière un proxy : lit `X-Forwarded-Proto` et `X-Forwarded-For`. |
 | `COOKIE_SECURE` | `auto` | Cookies `Secure` : `auto` (selon HTTPS), `true` ou `false`. |
 | `SESSION_DAYS` | `30` | Durée de connexion au mode Vœux sur un appareil. |
@@ -113,6 +122,6 @@ Les données sont alors dans `./data`.
 server/index.js       serveur HTTP, routes de l'API, sessions
 server/store.js       stockage (fichier JSON écrit de façon atomique)
 server/link-image.js  récupération de l'image d'un lien
-public/               page web : shared.js, home.js (création), app.js (liste), admin.js
+public/               page web : shared.js, home.js (accueil et création), app.js (liste), admin.js
 test/                 tests de l'API (node --test)
 ```

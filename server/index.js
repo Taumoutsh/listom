@@ -18,6 +18,7 @@ const PUBLIC_DIR = path.join(__dirname, "..", "public");
 const UPLOAD_NAME = /^[A-Za-z0-9_-]{16,40}\.(jpg|png|gif|webp)$/;
 const LIST_ID = "([A-Za-z0-9_-]{6,40})";
 const ITEM_ID = "([A-Za-z0-9_-]{6,40})";
+const TOKEN = "([A-Za-z0-9_-]{16,64})";
 const ADMIN_COOKIE = "listom_admin";
 const listCookie = (id) => "listom_v_" + id;
 
@@ -29,7 +30,7 @@ function readConfig(env) {
     port: Number(env.PORT) || 6104,
     host: env.HOST || "0.0.0.0",
     adminPassword: env.ADMIN_PASSWORD || "",
-    creationCode: env.CREATION_CODE || "",
+    inviteDays: Math.max(1, Number(env.INVITE_DAYS) || 30),
     sessionSecret: env.SESSION_SECRET || "",
     sessionDays: Math.max(1, Number(env.SESSION_DAYS) || 30),
     cookieSecure: (env.COOKIE_SECURE || "auto").toLowerCase(),   // auto | true | false
@@ -332,20 +333,29 @@ function createApp(env = process.env) {
 
   route("GET", "/api/health", (req, res) => sendJson(res, 200, { ok: true }));
 
-  route("GET", "/api/config", (req, res) => sendJson(res, 200, { creationCode: Boolean(config.creationCode) }));
+  // A creation link (/creer/<token>): what the form needs to know about it.
+  const INVITE_GONE = "Ce lien de création n'est plus valable : il a déjà servi, a expiré ou a été révoqué. Demandez-en un nouveau à l'administrateur.";
+  route("GET", "/api/invites/" + TOKEN, (req, res, [token]) => {
+    const invite = store.getInvite(token);
+    if (!invite) throw new HttpError(404, INVITE_GONE);
+    sendJson(res, 200, { invite: { name: invite.name, expiresAt: invite.expiresAt } });
+  });
 
-  // Create a list. The generated password is returned once, never stored in
-  // clear; the creator's browser is signed in to the new list right away.
+  // Create a list from a one-time creation link. The generated password is
+  // returned once, never stored in clear; the creator's browser is signed in
+  // to the new list right away.
   route("POST", "/api/lists", async (req, res) => {
     const ip = clientIp(req, config.trustProxy);
     if (limited("create:" + ip, 10, 3600000)) throw new HttpError(429, "Trop de listes créées d'un coup. Réessayez dans une heure.");
     const body = await readJson(req);
-    if (config.creationCode && !safeEqual(String(body.creationCode || ""), config.creationCode)) {
-      throw new HttpError(403, "Code de création incorrect.");
-    }
+    const token = typeof body.invite === "string" ? body.invite : "";
+    if (!store.getInvite(token)) throw new HttpError(403, INVITE_GONE);
     const settings = listSettings(body, { welcomeTitle: DEFAULT_WELCOME_TITLE, welcomeSubtitle: DEFAULT_WELCOME_SUBTITLE, heroUpload: null });
     const password = generatePassword();
-    const list = store.addList({ ...settings, ...(await hashPassword(password)), passwordVersion: 1 });
+    const hashed = await hashPassword(password);
+    // Take the link only now, after the slow hashing: one link, one list.
+    if (!store.takeInvite(token)) throw new HttpError(403, INVITE_GONE);
+    const list = store.addList({ ...settings, ...hashed, passwordVersion: 1 });
     await store.save();
     hit("create:" + ip);
     sendJson(res, 201, { list: publicList(list), password }, { "Set-Cookie": cookie(req, listCookie(list.id), listToken(list), config.sessionDays * 86400) });
@@ -509,6 +519,26 @@ function createApp(env = process.env) {
       .map((l) => ({ id: l.id, name: l.name, createdAt: l.createdAt, ...store.listStats(l.id) }))
       .sort((a, b) => String(b.lastActivity).localeCompare(String(a.lastActivity)));
     sendJson(res, 200, { lists });
+  });
+
+  route("GET", "/api/admin/invites", (req, res) => {
+    requireAdmin(req);
+    sendJson(res, 200, { invites: store.pendingInvites() });
+  });
+
+  route("POST", "/api/admin/invites", async (req, res) => {
+    requireAdmin(req);
+    const body = await readJson(req);
+    const invite = store.addInvite(cleanString(body.name, 80, "Le nom de la liste"), config.inviteDays);
+    await store.save();
+    sendJson(res, 201, { invite });
+  });
+
+  route("DELETE", "/api/admin/invites/" + TOKEN, async (req, res, [token]) => {
+    requireAdmin(req);
+    store.takeInvite(token);
+    await store.save();
+    send(res, 204, "");
   });
 
   route("POST", "/api/admin/lists/" + LIST_ID + "/password", async (req, res, [id]) => {
