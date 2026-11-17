@@ -222,8 +222,9 @@
     if (state.mode === "voeux") {
       return '<div class="toolbar">' +
         '<button class="btn icon-btn" data-action="settings" aria-label="Paramètres de la liste" title="Paramètres de la liste">' + ICONS.gear + "</button>" +
-        '<button class="btn ghost" data-action="preview">' + ICONS.eye + "Aperçu</button>" +
-        '<button class="btn ghost" data-action="lock">' + ICONS.lock + "Verrouiller</button>" +
+        // On phones these two shrink to icons, like the gear.
+        '<button class="btn ghost icon-on-mobile" data-action="preview" aria-label="Aperçu" title="Aperçu">' + ICONS.eye + '<span class="btn-label">Aperçu</span></button>' +
+        '<button class="btn ghost icon-on-mobile" data-action="lock" aria-label="Verrouiller" title="Verrouiller">' + ICONS.lock + '<span class="btn-label">Verrouiller</span></button>' +
         '<button class="btn primary push" data-action="new">' + ICONS.plus + "Ajouter un vœu</button></div>";
     }
     const free = gifts.filter((g) => !currentOf(g.id)).length;

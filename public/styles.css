@@ -351,3 +351,10 @@ a.btn { text-decoration: none; }
 .preview-bar b { color: var(--ink); }
 .btn.inert { pointer-events: none; cursor: default; }
 span.chip { cursor: default; }
+
+/* Mode Vœux toolbar on phones: Aperçu and Verrouiller become icon buttons, like the gear. */
+@media (max-width: 600px) {
+  .btn.icon-on-mobile { padding: 8px; width: 40px; height: 40px; border-color: var(--line); background: var(--surface); color: var(--ink); }
+  .btn.icon-on-mobile svg { width: 20px; height: 20px; }
+  .btn.icon-on-mobile .btn-label { display: none; }
+}
