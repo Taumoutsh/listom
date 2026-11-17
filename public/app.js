@@ -221,12 +221,14 @@
           .map(([l, n, on]) => '<span class="chip" aria-pressed="' + on + '">' + l + " · " + n + "</span>").join("") + "</div></div>";
     }
     if (state.mode === "voeux") {
-      return '<div class="toolbar">' +
+      return '<div class="toolbar"><div class="tool-group">' +
         '<button class="btn icon-btn" data-action="settings" aria-label="Paramètres de la liste" title="Paramètres de la liste">' + ICONS.gear + "</button>" +
-        // On phones these two shrink to icons, like the gear.
+        // On phones these shrink to icons, like the gear.
+        '<button class="btn ghost icon-on-mobile" data-action="share" aria-label="Partager la liste" title="Partager la liste avec vos proches">' + ICONS.share + '<span class="btn-label">Partager</span></button>' +
         '<button class="btn ghost icon-on-mobile" data-action="preview" aria-label="Aperçu" title="Aperçu">' + ICONS.eye + '<span class="btn-label">Aperçu</span></button>' +
         '<button class="btn ghost icon-on-mobile" data-action="lock" aria-label="Verrouiller" title="Verrouiller">' + ICONS.lock + '<span class="btn-label">Verrouiller</span></button>' +
-        '<button class="btn primary push" data-action="new">' + ICONS.plus + "Ajouter un vœu</button></div>";
+        "</div>" +
+        '<button class="btn primary push" data-action="new" aria-label="Ajouter un vœu">' + ICONS.plus + '<span>Ajouter<span class="hide-narrow"> un vœu</span></span></button></div>';
     }
     const free = gifts.filter((g) => !currentOf(g.id)).length;
     const chips = [["all", "Tous", gifts.length], ["free", "À offrir", free], ["taken", "Réservés", gifts.length - free]];
@@ -352,7 +354,8 @@
     const el = e.target.closest("[data-action]");
     if (!el || el.tagName === "INPUT") return;
     const a = el.dataset.action, id = el.dataset.id;
-    if (a === "preview") { state.preview = true; render(); window.scrollTo(0, 0); }
+    if (a === "share") shareList();
+    else if (a === "preview") { state.preview = true; render(); window.scrollTo(0, 0); }
     else if (a === "preview-exit") { state.preview = false; render(); window.scrollTo(0, 0); }
     else if (a === "filter") { state.filter = el.dataset.filter; LS.set("listom.filter", state.filter); render(); }
     else if (a === "new") openEditor(null);
@@ -699,6 +702,23 @@
   }
 
   function listUrl() { return window.Listom.listUrl(LIST_ID); }
+
+  // Share the givers' link: the phone's own share sheet where there is one
+  // (Messages, WhatsApp, e-mail…), otherwise copy the link. If copying is
+  // refused too, the settings sheet shows the link to copy by hand.
+  async function shareList() {
+    const url = listUrl(), name = plainTitle(state.list.name);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: name, text: "Voici ma liste de vœux « " + name + " » : choisissez un cadeau et réservez-le à votre nom.", url });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;   // the person closed the share sheet
+      }
+    }
+    if (await copyText(url)) toast("Lien copié : envoyez-le à vos proches pour qu'ils réservent leurs cadeaux.");
+    else openSettings();
+  }
   function editUrl() { return window.Listom.editUrl(LIST_ID); }
 
   function renderSettings(first) {

@@ -389,3 +389,8 @@ span.chip { cursor: default; }
 .preview-card .garland { margin-top: 0; }
 .preview-card .hotte-title { font-size: 17px; margin: 0; padding: 0; border: 0; }
 .preview-card .preview-gifts { margin: -4px 0 0; color: var(--muted); font-size: 13px; }
+
+/* Mode Vœux toolbar: the icon buttons stay together on the left. */
+.tool-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 600px) { .tool-group { gap: 6px; } }
+@media (max-width: 440px) { .hide-narrow { display: none; } }
