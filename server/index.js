@@ -583,9 +583,13 @@ function createApp(env = process.env) {
       data = await fsp.readFile(path.join(PUBLIC_DIR, "index.html"));
       return send(res, 200, req.method === "HEAD" ? "" : data, { "Content-Type": MIME[".html"], "Cache-Control": "no-cache" });
     }
+    // Pages, scripts and styles are revalidated on every visit (ETag), so an
+    // update reaches browsers at once instead of mixing old and new files.
     const ext = path.extname(file).toLowerCase();
-    const cache = ext === ".html" ? "no-cache" : "public, max-age=300";
-    send(res, 200, req.method === "HEAD" ? "" : data, { "Content-Type": MIME[ext] || "application/octet-stream", "Cache-Control": cache });
+    const etag = '"' + crypto.createHash("sha1").update(data).digest("base64url").slice(0, 16) + '"';
+    const headers = { "Content-Type": MIME[ext] || "application/octet-stream", "Cache-Control": "no-cache", ETag: etag };
+    if (req.headers["if-none-match"] === etag) return send(res, 304, "", headers);
+    send(res, 200, req.method === "HEAD" ? "" : data, headers);
   };
 
   const handler = async (req, res) => {
