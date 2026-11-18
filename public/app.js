@@ -41,6 +41,7 @@
     // The address decides: /<id> is for givers, /<id>/edit for the owner.
     mode: route.edit ? "voeux" : "lutin",
     filter: LS.get("listom.filter", "all"),
+    sort: LS.get("listom.sort", "added"),        // see SORTS
     lutinName: LS.get("listom.lutinName", ""),
     unlocked: false,                              // Mode Vœux session (server cookie)
     pwDraft: "", pwErr: "", pwBusy: false,
@@ -58,6 +59,39 @@
   const sortedGifts = () => [...state.gifts].sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
   const historyOf = (gid) => state.reservations.filter((r) => r.giftId === gid).sort((a, b) => String(a.at).localeCompare(String(b.at)));
   const currentOf = (gid) => { const h = historyOf(gid); const last = h[h.length - 1]; return last && last.action !== "release" ? last : null; };
+
+  // Sorting the gifts. Uses what every gift already has (createdAt, title,
+  // price) and, for givers only, the reservations. "status" is offered only
+  // where reservations are known (Mode Lutin; the preview shows all as free).
+  const SORTS = [
+    ["added", "Ordre d'ajout"], ["recent", "Les plus récents"], ["alpha", "De A à Z"],
+    ["priceAsc", "Prix croissant"], ["priceDesc", "Prix décroissant"], ["status", "Disponibles d'abord"]
+  ];
+  const collator = new Intl.Collator("fr", { sensitivity: "base", numeric: true });
+  const sortOptions = () => SORTS.filter(([k]) => k !== "status" || state.mode === "lutin" || state.preview);
+  function sortGifts(list) {
+    const by = sortOptions().some(([k]) => k === state.sort) ? state.sort : "added";
+    const out = [...list];                                    // already in order of addition
+    const price = (g) => (typeof g.price === "number" ? g.price : null);
+    if (by === "recent") out.reverse();
+    else if (by === "alpha") out.sort((a, b) => collator.compare(a.title || "", b.title || ""));
+    else if (by === "priceAsc" || by === "priceDesc") {
+      out.sort((a, b) => {                                    // gifts without a price go last
+        const x = price(a), y = price(b);
+        if (x === null || y === null) return (x === null) - (y === null);
+        return by === "priceAsc" ? x - y : y - x;
+      });
+    } else if (by === "status" && state.mode === "lutin") {
+      out.sort((a, b) => (currentOf(a.id) ? 1 : 0) - (currentOf(b.id) ? 1 : 0));   // stable: keeps order of addition
+    }
+    return out;
+  }
+  function sortControl() {
+    const current = sortOptions().some(([k]) => k === state.sort) ? state.sort : "added";
+    return '<label class="sort" for="sort">' + ICONS.sort + '<span class="sr">Trier les vœux</span>' +
+      '<select id="sort">' + sortOptions().map(([k, l]) => '<option value="' + k + '"' + (k === current ? " selected" : "") + ">" + l + "</option>").join("") + "</select>" +
+      ICONS.chevron + "</label>";
+  }
 
   /* ---------- Server API ----------
      Every error the server returns carries a French message, shown as is in
@@ -218,7 +252,7 @@
     if (state.preview) {   // same chips as givers, inert, every gift shown as available
       return '<div class="toolbar"><div class="chips" aria-hidden="true">' +
         [["Tous", gifts.length, true], ["À offrir", gifts.length, false], ["Réservés", 0, false]]
-          .map(([l, n, on]) => '<span class="chip" aria-pressed="' + on + '">' + l + " · " + n + "</span>").join("") + "</div></div>";
+          .map(([l, n, on]) => '<span class="chip" aria-pressed="' + on + '">' + l + " · " + n + "</span>").join("") + "</div>" + sortControl() + "</div>";
     }
     if (state.mode === "voeux") {
       return '<div class="toolbar"><div class="tool-group">' +
@@ -228,13 +262,14 @@
         '<button class="btn ghost icon-on-mobile" data-action="preview" aria-label="Aperçu" title="Aperçu">' + ICONS.eye + '<span class="btn-label">Aperçu</span></button>' +
         '<button class="btn ghost icon-on-mobile" data-action="lock" aria-label="Verrouiller" title="Verrouiller">' + ICONS.lock + '<span class="btn-label">Verrouiller</span></button>' +
         "</div>" +
-        '<button class="btn primary push" data-action="new" aria-label="Ajouter un vœu">' + ICONS.plus + '<span>Ajouter<span class="hide-narrow"> un vœu</span></span></button></div>';
+        '<button class="btn primary push" data-action="new" aria-label="Ajouter un vœu">' + ICONS.plus + '<span>Ajouter<span class="hide-narrow"> un vœu</span></span></button></div>' +
+        (gifts.length > 1 ? '<div class="sortbar">' + sortControl() + "</div>" : "");
     }
     const free = gifts.filter((g) => !currentOf(g.id)).length;
     const chips = [["all", "Tous", gifts.length], ["free", "À offrir", free], ["taken", "Réservés", gifts.length - free]];
     return '<div class="toolbar"><div class="chips" role="group" aria-label="Filtrer">' +
       chips.map(([k, l, n]) => '<button class="chip" data-action="filter" data-filter="' + k + '" aria-pressed="' + (state.filter === k) + '">' + l + " · " + n + "</button>").join("") +
-      "</div>" + '<div class="tool-group push">' +
+      "</div>" + '<div class="tool-group push">' + sortControl() +
       (state.lutinName ? '<span class="fine">Vous réservez en tant que <b>' + esc(state.lutinName) + "</b></span>" : "") +
       '<button class="btn ghost icon-on-mobile" data-action="share" aria-label="Partager la liste" title="Partager la liste">' + ICONS.share + '<span class="btn-label">Partager</span></button>' +
       "</div></div>" +
@@ -340,6 +375,7 @@
     let shown = gifts;
     if (state.mode === "lutin" && state.filter === "free") shown = gifts.filter((g) => !currentOf(g.id));
     if (state.mode === "lutin" && state.filter === "taken") shown = gifts.filter((g) => currentOf(g.id));
+    shown = sortGifts(shown);
     if (!gifts.length) html += emptyState();
     else if (!shown.length) html += '<div class="empty"><h2>' + (state.filter === "free" ? "Tout est réservé" : "Rien de réservé pour l'instant") + "</h2><p>" + (state.filter === "free" ? "Tous les cadeaux ont trouvé leur lutin." : "Soyez le premier à choisir un cadeau.") + "</p></div>";
     else html += '<div class="grid">' + shown.map(card).join("") + "</div>";
@@ -421,6 +457,9 @@
       setTimeout(() => vv.removeEventListener("resize", go), 1500);
     }
   }
+  app.addEventListener("change", (e) => {
+    if (e.target.id === "sort") { state.sort = e.target.value; LS.set("listom.sort", state.sort); render(); }
+  });
   app.addEventListener("input", (e) => {
     if (e.target.id && e.target.id.startsWith("rn-")) state.draftName = e.target.value;
     if (e.target.id === "pw") state.pwDraft = e.target.value;

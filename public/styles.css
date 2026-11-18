@@ -394,3 +394,15 @@ span.chip { cursor: default; }
 .tool-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 @media (max-width: 600px) { .tool-group { gap: 6px; } }
 @media (max-width: 440px) { .hide-narrow { display: none; } }
+
+/* Sort menu: a chip-like select with a sort icon and a chevron. */
+.sort { position: relative; display: inline-flex; align-items: center; color: var(--muted); }
+.sort > svg { position: absolute; pointer-events: none; width: 15px; height: 15px; }
+.sort > svg:first-of-type { left: 11px; }
+.sort > svg:last-of-type { right: 10px; width: 14px; height: 14px; }
+.sort select { appearance: none; -webkit-appearance: none; font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 30px 6px 32px; cursor: pointer; max-width: 100%; }
+.sort select:hover { border-color: var(--muted); }
+.sort select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (pointer: coarse) { .sort select { font-size: 16px; padding-block: 5px; } }   /* no zoom on iPhone */
+.sortbar { display: flex; justify-content: flex-end; margin-top: -8px; }
