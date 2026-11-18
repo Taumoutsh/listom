@@ -45,7 +45,7 @@ function readConfig(env) {
 const MIME = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
-  ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json", ".txt": "text/plain; charset=utf-8"
+  ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json", ".txt": "text/plain; charset=utf-8", ".webmanifest": "application/manifest+json"
 };
 
 const SECURITY_HEADERS = {
@@ -575,7 +575,7 @@ function createApp(env = process.env) {
   const versioned = new Map();
   const pageHtml = () => {
     const html = fs.readFileSync(path.join(PUBLIC_DIR, "index.html"), "utf8");
-    return Buffer.from(html.replace(/(src|href)="\/([\w.-]+\.(?:js|css|svg))"/g, (all, attr, name) => {
+    return Buffer.from(html.replace(/(src|href)="\/([\w.-]+\.(?:js|css|svg|png|webmanifest))"/g, (all, attr, name) => {
       if (!versioned.has(name)) {
         try { versioned.set(name, crypto.createHash("sha1").update(fs.readFileSync(path.join(PUBLIC_DIR, name))).digest("hex").slice(0, 10)); }
         catch (e) { return all; }

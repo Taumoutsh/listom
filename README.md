@@ -103,6 +103,10 @@ listes.votre-site.fr {
 
 Si le proxy met les réponses en mémoire tampon (Nginx), désactivez-la (`proxy_buffering off;`), sinon les mises à jour en direct arrivent en retard.
 
+### Sur l'écran d'accueil d'un téléphone
+
+Listom peut s'installer comme une application : sur iPhone, ouvrez la page dans Safari, touchez **Partager** puis **Sur l'écran d'accueil** ; sur Android, menu de Chrome puis **Ajouter à l'écran d'accueil**. L'icône vient de `public/apple-touch-icon.png` (iPhone) et de `public/manifest.webmanifest` (Android), et l'application s'ouvre en plein écran sur la page ajoutée (une liste, ou son lien d'édition).
+
 ## Configuration (`.env`)
 
 | Variable | Défaut | Rôle |
