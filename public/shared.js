@@ -38,12 +38,18 @@
   };
   const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="11" width="26" height="18" rx="4" fill="var(--accent)"/><rect x="1.5" y="8" width="29" height="6" rx="2.5" fill="var(--accent)"/><rect x="14" y="8" width="4" height="21" fill="var(--surface)" opacity=".9"/><path d="M16 8c-2-4-7-6-8-3s4 3 8 3zm0 0c2-4 7-6 8-3s-4 3-8 3z" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/></svg>';
 
-  // Welcome picture in a round frame with two swinging Christmas baubles.
-  const heroPicture = (src) => '<span class="robin"><img src="' + esc(src) + '" alt="" width="280" height="280">' +
-    '<svg class="baubles" viewBox="0 0 120 120" aria-hidden="true">' +
-    '<g class="bauble"><path d="M14 -6v20" stroke="var(--muted)" stroke-width="1.5"/><rect x="10" y="13" width="8" height="5" rx="1" fill="#C9A227"/><circle cx="14" cy="26" r="9" fill="#D6336C"/><path d="M9 23q5-4 10 0" stroke="#fff" stroke-width="1.5" fill="none" opacity=".7"/></g>' +
-    '<g class="bauble b2"><path d="M106 -6v26" stroke="var(--muted)" stroke-width="1.5"/><rect x="102" y="19" width="8" height="5" rx="1" fill="#C9A227"/><circle cx="106" cy="32" r="8" fill="#E5B54C"/><path d="M101 29q5-4 10 0" stroke="#fff" stroke-width="1.5" fill="none" opacity=".7"/></g>' +
-    "</svg></span>";
+  // List themes: wording of each (the drawings are in garland.js).
+  const THEMES = {
+    noel: { label: "Noël", section: "À mettre dans la hotte", welcomeTitle: "Ma liste au *Père Noël*" },
+    anniversaire: { label: "Anniversaire", section: "Pour souffler les bougies", welcomeTitle: "Mon *anniversaire* approche" },
+    mariage: { label: "Mariage", section: "Pour les jeunes mariés", welcomeTitle: "Notre liste de *mariage*" }
+  };
+  const themeOf = (t) => (Object.prototype.hasOwnProperty.call(THEMES, t) ? t : "noel");
+
+  // Welcome picture in a round frame, with the theme's two charms hanging over
+  // it (baubles, birthday cakes or wedding rings).
+  const heroPicture = (src, theme) => '<span class="robin"><img src="' + esc(src) + '" alt="" width="280" height="280">' +
+    (window.ListomCharms ? window.ListomCharms(themeOf(theme)) : "") + "</span>";
   const heroSrc = (upload) => upload ? "/uploads/" + encodeURIComponent(upload) : "/hero.svg";
 
   const DEFAULTS = {
@@ -117,5 +123,5 @@
   const editUrl = (id) => location.origin + href.edit(id);
   const inviteUrl = (token) => location.origin + "/creer/" + token;
 
-  window.Listom = { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, href, listUrl, editUrl, inviteUrl };
+  window.Listom = { LS, esc, richTitle, plainTitle, ICONS, LOGO, THEMES, themeOf, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, href, listUrl, editUrl, inviteUrl };
 })();

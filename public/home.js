@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  const { esc, richTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, href, listUrl, editUrl } = window.Listom;
+  const { esc, richTitle, ICONS, LOGO, THEMES, themeOf, heroPicture, heroSrc, DEFAULTS, toast, copyText, api, myLists, route, href, listUrl, editUrl } = window.Listom;
   if (!["home", "create", "notfound"].includes(route.kind)) return;
 
   const app = document.getElementById("app");
@@ -43,6 +43,7 @@
   const TOKEN = route.token;
   const state = {
     checking: true, gone: "",
+    theme: "noel",                           // set by the admin on the creation link
     name: "", welcomeTitle: DEFAULTS.welcomeTitle, welcomeSubtitle: DEFAULTS.welcomeSubtitle,
     file: null, previewUrl: "",
     busy: false, err: "", created: null      // { id, name, password, imageFailed }
@@ -53,10 +54,10 @@
   function previewHtml() {
     return '<div class="preview-card" aria-hidden="true">' +
       '<div class="hero list-header"><div class="list-tag"><p class="list-name">' + esc(state.name || "Les vœux de Camille") + "</p></div>" +
-        '<div class="onboard-hero">' + heroPicture(state.previewUrl || heroSrc(null)) + "<h2>" + richTitle(state.welcomeTitle || DEFAULTS.welcomeTitle) + "</h2></div>" +
+        '<div class="onboard-hero">' + heroPicture(state.previewUrl || heroSrc(null), state.theme) + "<h2>" + richTitle(state.welcomeTitle || THEMES[state.theme].welcomeTitle) + "</h2></div>" +
         '<p class="lead">' + esc(state.welcomeSubtitle || DEFAULTS.welcomeSubtitle) + "</p></div>" +
-      (window.ListomGarland ? window.ListomGarland() : "") +
-      '<p class="hotte-title">À mettre dans la hotte</p>' +
+      (window.ListomGarland ? window.ListomGarland(state.theme) : "") +
+      '<p class="hotte-title">' + esc(THEMES[state.theme].section) + "</p>" +
       '<p class="preview-gifts">Vos vœux apparaîtront ici.</p></div>';
   }
 
@@ -74,7 +75,7 @@
         '<form class="create-form" id="create" novalidate>' +
           '<div class="field"><label for="c-name">Nom de la liste</label><input class="field-input" id="c-name" maxlength="80" required placeholder="Les vœux de Camille" value="' + esc(state.name) + '"></div>' +
           '<div class="field"><label for="c-title">Titre d\'accueil</label><input class="field-input" id="c-title" maxlength="120" value="' + esc(state.welcomeTitle) + '">' +
-            '<span class="hint">Entourez des mots d\'astérisques pour les colorer : Ma liste au *Père Noël*</span></div>' +
+            '<span class="hint">Entourez des mots d\'astérisques pour les colorer : ' + esc(THEMES[state.theme].welcomeTitle) + "</span></div>" +
           '<div class="field"><label for="c-sub">Sous-titre</label><textarea class="field-input" id="c-sub" maxlength="300">' + esc(state.welcomeSubtitle) + "</textarea></div>" +
           '<div class="field"><span class="label">Image d\'accueil</span>' +
             '<div class="actions"><label class="btn upload" for="c-file">' + (state.file ? "Changer l'image" : "Choisir une image") + '<input type="file" id="c-file" accept="image/png,image/jpeg,image/webp,image/gif"></label>' +
@@ -180,7 +181,11 @@
   document.title = "Créer une liste · Listom";
   render();
   api("GET", "/api/invites/" + encodeURIComponent(TOKEN))
-    .then((r) => { state.name = (r.invite && r.invite.name) || ""; })
+    .then((r) => {
+      state.name = (r.invite && r.invite.name) || "";
+      state.theme = themeOf(r.invite && r.invite.theme);
+      state.welcomeTitle = THEMES[state.theme].welcomeTitle;   // the theme's suggested title
+    })
     .catch((err) => { state.gone = err.message || "Ce lien de création n'est plus valable."; })
     .then(() => { state.checking = false; render(); });
 })();

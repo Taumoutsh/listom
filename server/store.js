@@ -115,11 +115,12 @@ class Store {
     return invite && invite.expiresAt > new Date().toISOString() ? invite : null;
   }
 
-  addInvite(name, days) {
+  addInvite(name, days, theme) {
     const now = Date.now();
     const invite = {
       token: crypto.randomBytes(18).toString("base64url"),
       name,
+      theme,
       createdAt: new Date(now).toISOString(),
       expiresAt: new Date(now + days * 86400000).toISOString()
     };

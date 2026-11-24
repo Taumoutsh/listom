@@ -45,12 +45,12 @@ function client() {
 }
 
 let adminClient = null;
-async function newInvite(name = "") {
+async function newInvite(name = "", theme) {
   if (!adminClient) {
     adminClient = client();
     assert.equal((await adminClient("POST", "/api/admin/login", { password: "admin-secret" })).status, 200);
   }
-  const r = await adminClient("POST", "/api/admin/invites", { name });
+  const r = await adminClient("POST", "/api/admin/invites", theme ? { name, theme } : { name });
   assert.equal(r.status, 201);
   return r.body.invite.token;
 }
@@ -119,6 +119,26 @@ test("only the owner edits gifts; anyone reserves; history is kept", async () =>
   assert.equal((await giver("POST", L + "/login", { password: "wrong" })).status, 401);
   assert.equal((await giver("POST", L + "/login", { password })).status, 200);
   assert.equal((await giver("POST", L + "/gifts", { title: "Livre" })).status, 201);
+});
+
+test("themes: set on the creation link, changed by the admin only", async () => {
+  const c = client();
+  const token = await newInvite("Les 30 ans de Léo", "anniversaire");
+  assert.equal((await c("GET", "/api/invites/" + token)).body.invite.theme, "anniversaire");
+  const { list } = (await c("POST", "/api/lists", { name: "Les 30 ans de Léo", invite: token, theme: "mariage" })).body;
+  assert.equal(list.theme, "anniversaire", "the link decides, not the form");
+  assert.equal(list.welcomeTitle, "Mon *anniversaire* approche", "the theme's suggested title");
+
+  assert.equal((await adminClient("POST", "/api/admin/invites", { theme: "halloween" })).status, 400);
+  assert.equal((await c("PUT", "/api/admin/lists/" + list.id + "/theme", { theme: "mariage" })).status, 401);
+  assert.equal((await adminClient("PUT", "/api/admin/lists/" + list.id + "/theme", { theme: "halloween" })).status, 400);
+  assert.equal((await adminClient("PUT", "/api/admin/lists/" + list.id + "/theme", { theme: "mariage" })).status, 200);
+  assert.equal((await c("GET", "/api/lists/" + list.id)).body.list.theme, "mariage");
+  const row = (await adminClient("GET", "/api/admin/lists")).body.lists.find((l) => l.id === list.id);
+  assert.equal(row.theme, "mariage");
+
+  const plain = (await createList(client())).list;
+  assert.equal(plain.theme, "noel", "Noël by default");
 });
 
 test("lists are isolated from each other", async () => {

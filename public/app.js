@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const { LS, esc, richTitle, plainTitle, ICONS, LOGO, heroPicture, heroSrc, DEFAULTS, toast, copyText, myLists, route, href } = window.Listom;
+  const { LS, esc, richTitle, plainTitle, ICONS, LOGO, THEMES, themeOf, heroPicture, heroSrc, DEFAULTS, toast, copyText, myLists, route, href } = window.Listom;
   if (route.kind !== "list") return;
   const LIST_ID = route.id;
   const API = "/api/lists/" + encodeURIComponent(LIST_ID);
@@ -214,7 +214,7 @@
     const l = state.list;
     // The list's name on a gift tag, the same shape as the price tags of the cards.
     return '<header class="hero list-header"><div class="list-tag"><p class="list-name">' + esc(l.name) + "</p></div>" +
-      '<div class="onboard-hero">' + heroPicture(heroSrc(l.heroUpload)) + "<h1>" + richTitle(l.welcomeTitle) + "</h1></div>" +
+      '<div class="onboard-hero">' + heroPicture(heroSrc(l.heroUpload), l.theme) + "<h1>" + richTitle(l.welcomeTitle) + "</h1></div>" +
       '<p class="lead">' + esc(l.welcomeSubtitle) + "</p></header>";
   }
 
@@ -239,7 +239,9 @@
 
   function hero(gifts) {
     if (state.mode === "lutin" || state.preview) {   // givers: the list's header, then the gifts (no counters)
-      return listHeader() + (window.ListomGarland ? window.ListomGarland() : "") + '<h2 class="hotte-title">À mettre dans la hotte</h2>';
+      // The theme (set by the admin) picks the garland and the section's title.
+      const theme = themeOf(state.list.theme);
+      return listHeader() + (window.ListomGarland ? window.ListomGarland(theme) : "") + '<h2 class="hotte-title">' + esc(THEMES[theme].section) + "</h2>";
     }
     const total = gifts.reduce((s, g) => s + (typeof g.price === "number" ? g.price : 0), 0);
     const parts = ["<span><b>" + gifts.length + "</b> " + (gifts.length > 1 ? "vœux" : "vœu") + "</span>"];
@@ -797,9 +799,9 @@
           '<div class="fields">' +
             '<div class="field full"><label for="s-name">Nom de la liste</label><input class="field-input" id="s-name" maxlength="80" required value="' + esc(st.name) + '"></div>' +
             '<div class="field full"><label for="s-title">Titre d\'accueil</label><input class="field-input" id="s-title" maxlength="120" value="' + esc(st.welcomeTitle) + '">' +
-              '<span class="hint">Entourez des mots d\'astérisques pour les colorer : Ma liste au *Père Noël*</span></div>' +
+              '<span class="hint">Entourez des mots d\'astérisques pour les colorer : ' + esc(THEMES[themeOf(state.list.theme)].welcomeTitle) + "</span></div>" +
             '<div class="field full"><label for="s-sub">Sous-titre</label><textarea class="field-input" id="s-sub" maxlength="300">' + esc(st.welcomeSubtitle) + "</textarea></div>" +
-            '<div class="field full"><span class="label">Image d\'accueil</span><div class="hero-pick">' + heroPicture(heroSrc(st.heroUpload)) +
+            '<div class="field full"><span class="label">Image d\'accueil</span><div class="hero-pick">' + heroPicture(heroSrc(st.heroUpload), state.list.theme) +
               '<div class="actions"><label class="btn upload" for="s-file">Changer l\'image<input type="file" id="s-file" accept="image/png,image/jpeg,image/webp,image/gif"></label>' +
               (st.heroUpload ? '<button type="button" class="btn ghost" data-s="default-hero">Image par défaut</button>' : "") + "</div></div></div>" +
           "</div>" +

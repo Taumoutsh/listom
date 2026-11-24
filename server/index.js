@@ -22,7 +22,15 @@ const TOKEN = "([A-Za-z0-9_-]{16,64})";
 const ADMIN_COOKIE = "listom_admin";
 const listCookie = (id) => "listom_v_" + id;
 
-const DEFAULT_WELCOME_TITLE = "Ma liste au *Père Noël*";
+// List themes: decorations and wording of the list page. Lists created before
+// themes existed are "noel".
+const THEMES = {
+  noel: { welcomeTitle: "Ma liste au *Père Noël*" },
+  anniversaire: { welcomeTitle: "Mon *anniversaire* approche" },
+  mariage: { welcomeTitle: "Notre liste de *mariage*" }
+};
+const themeOf = (value) => (Object.prototype.hasOwnProperty.call(THEMES, value) ? value : "noel");
+const DEFAULT_WELCOME_TITLE = THEMES.noel.welcomeTitle;
 const DEFAULT_WELCOME_SUBTITLE = "Une liste de vœux partagée : chacun réserve ce qu'il offre, et la personne gâtée garde la surprise.";
 
 function readConfig(env) {
@@ -261,7 +269,8 @@ function createApp(env = process.env) {
   };
 
   const publicList = (list) => ({
-    id: list.id, name: list.name, welcomeTitle: list.welcomeTitle, welcomeSubtitle: list.welcomeSubtitle, heroUpload: list.heroUpload || null
+    id: list.id, name: list.name, theme: themeOf(list.theme),
+    welcomeTitle: list.welcomeTitle, welcomeSubtitle: list.welcomeSubtitle, heroUpload: list.heroUpload || null
   });
 
   const listSettings = (body, current) => {
@@ -270,7 +279,7 @@ function createApp(env = process.env) {
     if (!name) throw new HttpError(400, "Donnez un nom à votre liste.");
     return {
       name,
-      welcomeTitle: pick("welcomeTitle", 120, "Le titre d'accueil", DEFAULT_WELCOME_TITLE),
+      welcomeTitle: pick("welcomeTitle", 120, "Le titre d'accueil", THEMES[themeOf(current.theme)].welcomeTitle),
       welcomeSubtitle: pick("welcomeSubtitle", 300, "Le sous-titre", DEFAULT_WELCOME_SUBTITLE),
       heroUpload: body.heroUpload === undefined ? (current.heroUpload || null) : checkUpload(body.heroUpload)
     };
@@ -338,7 +347,7 @@ function createApp(env = process.env) {
   route("GET", "/api/invites/" + TOKEN, (req, res, [token]) => {
     const invite = store.getInvite(token);
     if (!invite) throw new HttpError(404, INVITE_GONE);
-    sendJson(res, 200, { invite: { name: invite.name, expiresAt: invite.expiresAt } });
+    sendJson(res, 200, { invite: { name: invite.name, theme: themeOf(invite.theme), expiresAt: invite.expiresAt } });
   });
 
   // Create a list from a one-time creation link. The generated password is
@@ -346,16 +355,18 @@ function createApp(env = process.env) {
   // to the new list right away.
   route("POST", "/api/lists", async (req, res) => {
     const ip = clientIp(req, config.trustProxy);
-    if (limited("create:" + ip, 10, 3600000)) throw new HttpError(429, "Trop de listes créées d'un coup. Réessayez dans une heure.");
+    if (limited("create:" + ip, 30, 3600000)) throw new HttpError(429, "Trop de listes créées d'un coup. Réessayez dans une heure.");
     const body = await readJson(req);
     const token = typeof body.invite === "string" ? body.invite : "";
-    if (!store.getInvite(token)) throw new HttpError(403, INVITE_GONE);
-    const settings = listSettings(body, { welcomeTitle: DEFAULT_WELCOME_TITLE, welcomeSubtitle: DEFAULT_WELCOME_SUBTITLE, heroUpload: null });
+    const pending = store.getInvite(token);
+    if (!pending) throw new HttpError(403, INVITE_GONE);
+    const theme = themeOf(pending.theme);   // set by the admin on the link
+    const settings = listSettings(body, { theme, welcomeTitle: THEMES[theme].welcomeTitle, welcomeSubtitle: DEFAULT_WELCOME_SUBTITLE, heroUpload: null });
     const password = generatePassword();
     const hashed = await hashPassword(password);
     // Take the link only now, after the slow hashing: one link, one list.
     if (!store.takeInvite(token)) throw new HttpError(403, INVITE_GONE);
-    const list = store.addList({ ...settings, ...hashed, passwordVersion: 1 });
+    const list = store.addList({ ...settings, theme, ...hashed, passwordVersion: 1 });
     await store.save();
     hit("create:" + ip);
     sendJson(res, 201, { list: publicList(list), password }, { "Set-Cookie": cookie(req, listCookie(list.id), listToken(list), config.sessionDays * 86400) });
@@ -516,7 +527,7 @@ function createApp(env = process.env) {
   route("GET", "/api/admin/lists", (req, res) => {
     requireAdmin(req);
     const lists = store.data.lists
-      .map((l) => ({ id: l.id, name: l.name, createdAt: l.createdAt, ...store.listStats(l.id) }))
+      .map((l) => ({ id: l.id, name: l.name, theme: themeOf(l.theme), createdAt: l.createdAt, ...store.listStats(l.id) }))
       .sort((a, b) => String(b.lastActivity).localeCompare(String(a.lastActivity)));
     sendJson(res, 200, { lists });
   });
@@ -529,7 +540,8 @@ function createApp(env = process.env) {
   route("POST", "/api/admin/invites", async (req, res) => {
     requireAdmin(req);
     const body = await readJson(req);
-    const invite = store.addInvite(cleanString(body.name, 80, "Le nom de la liste"), config.inviteDays);
+    if (body.theme !== undefined && !THEMES[body.theme]) throw new HttpError(400, "Thème inconnu.");
+    const invite = store.addInvite(cleanString(body.name, 80, "Le nom de la liste"), config.inviteDays, themeOf(body.theme));
     await store.save();
     sendJson(res, 201, { invite });
   });
@@ -539,6 +551,17 @@ function createApp(env = process.env) {
     store.takeInvite(token);
     await store.save();
     send(res, 204, "");
+  });
+
+  route("PUT", "/api/admin/lists/" + LIST_ID + "/theme", async (req, res, [id]) => {
+    requireAdmin(req);
+    findList(id);
+    const body = await readJson(req);
+    if (!Object.prototype.hasOwnProperty.call(THEMES, body.theme)) throw new HttpError(400, "Thème inconnu.");
+    store.updateList(id, { theme: body.theme });
+    await store.save();
+    broadcast(id, "settings");
+    sendJson(res, 200, { theme: body.theme });
   });
 
   route("POST", "/api/admin/lists/" + LIST_ID + "/password", async (req, res, [id]) => {

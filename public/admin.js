@@ -3,7 +3,13 @@
 (function () {
   "use strict";
 
-  const { esc, ICONS, LOGO, toast, copyText, api, route, href, inviteUrl } = window.Listom;
+  const { esc, ICONS, LOGO, THEMES, themeOf, toast, copyText, api, route, href, inviteUrl } = window.Listom;
+
+  // A theme menu (Noël, Anniversaire, Mariage).
+  const themeSelect = (id, value, label) =>
+    '<span class="select-wrap"><select class="select" id="' + esc(id) + '" aria-label="' + esc(label) + '">' +
+    Object.keys(THEMES).map((k) => '<option value="' + k + '"' + (k === themeOf(value) ? " selected" : "") + ">" + THEMES[k].label + "</option>").join("") +
+    "</select>" + ICONS.chevron + "</span>";
   if (route.kind !== "admin") return;
 
   const app = document.getElementById("app");
@@ -18,7 +24,7 @@
     confirm: null,       // { id, kind: "reset" | "delete" }
     revealed: {},        // list id -> new password, shown once
     working: null,
-    invites: [], inviteName: "", inviteBusy: false,
+    invites: [], inviteName: "", inviteTheme: "noel", inviteBusy: false,
     freshInvite: null,   // token of the link just created (highlighted)
     revoking: null       // token waiting for confirmation
   };
@@ -42,7 +48,7 @@
       return '<li class="invite-row' + (fresh ? " fresh" : "") + '">' +
         '<div class="admin-main"><span class="invite-name">' + (inv.name ? esc(inv.name) : "Liste sans nom") + "</span>" +
           (fresh ? '<span class="pill free">Nouveau</span>' : "") + "</div>" +
-        '<div class="admin-meta"><span>Créé le ' + esc(fmtDate(inv.createdAt)) + "</span><span>Expire le " + esc(fmtDate(inv.expiresAt)) + "</span></div>" +
+        '<div class="admin-meta"><span>Thème ' + esc(THEMES[themeOf(inv.theme)].label) + "</span><span>Créé le " + esc(fmtDate(inv.createdAt)) + "</span><span>Expire le " + esc(fmtDate(inv.expiresAt)) + "</span></div>" +
         '<div class="secret-row"><code id="inv-' + esc(t) + '">' + esc(inviteUrl(t)) + "</code>" +
           '<button class="btn" data-a="copy-invite" data-token="' + esc(t) + '">' + ICONS.copy + "Copier</button>" +
           (state.revoking === t ? "" : '<button class="btn ghost" data-a="revoke" data-token="' + esc(t) + '">Révoquer</button>') + "</div>" +
@@ -53,6 +59,7 @@
       '<form class="invite-form" id="invite" novalidate>' +
         '<label for="a-invite-name" class="sr">Nom de la liste (facultatif)</label>' +
         '<input class="field-input" id="a-invite-name" maxlength="80" placeholder="Nom de la liste (facultatif)" value="' + esc(state.inviteName) + '">' +
+        themeSelect("a-invite-theme", state.inviteTheme, "Thème de la liste") +
         '<button class="btn primary" type="submit"' + (state.inviteBusy ? " disabled" : "") + ">" + ICONS.link + "Créer un lien</button></form>" +
       (rows ? '<ul class="invite-list">' + rows + "</ul>" : '<p class="fine">Aucun lien en attente.</p>') +
       "</section>";
@@ -96,7 +103,8 @@
         '<span class="admin-id">/' + esc(l.id) + "</span></div>" +
       '<div class="admin-meta"><span>' + plural(l.gifts, "vœu", "vœux") + "</span><span>" + plural(l.reserved, "réservé", "réservés") + "</span>" +
         "<span>Créée le " + esc(fmtDate(l.createdAt)) + "</span><span>Activité le " + esc(fmtDate(l.lastActivity)) + "</span></div>" +
-      '<div class="actions"><button class="btn" data-a="reset" data-id="' + esc(l.id) + '">' + ICONS.key + "Nouveau mot de passe</button>" +
+      '<div class="actions">' + themeSelect("theme-" + l.id, l.theme, "Thème de « " + l.name + " »") +
+        '<button class="btn" data-a="reset" data-id="' + esc(l.id) + '">' + ICONS.key + "Nouveau mot de passe</button>" +
         '<button class="btn danger" data-a="delete" data-id="' + esc(l.id) + '">' + ICONS.trash + "Supprimer</button></div>" +
       extra + "</li>";
   }
@@ -124,6 +132,20 @@
     else if (!state.admin && state.enabled) { const pw = document.getElementById("a-pw"); if (pw) pw.focus(); }
   }
 
+  // Theme menus: the one of the next creation link, and each list's own.
+  app.addEventListener("change", async (e) => {
+    const id = e.target.id || "";
+    if (id === "a-invite-theme") { state.inviteTheme = e.target.value; return; }
+    if (!id.startsWith("theme-")) return;
+    const listId = id.slice(6), theme = e.target.value;
+    const list = state.lists.find((l) => l.id === listId);
+    try {
+      await call("PUT", "/api/admin/lists/" + encodeURIComponent(listId) + "/theme", { theme });
+      if (list) list.theme = theme;
+      toast("Thème " + THEMES[theme].label + " appliqué à « " + (list ? list.name : "la liste") + " ».");
+    } catch (err) { toast(err.message); render(); }
+  });
+
   app.addEventListener("input", (e) => {
     if (e.target.id === "a-pw") state.pw = e.target.value;
     if (e.target.id === "a-filter") { state.filter = e.target.value; render(); }
@@ -136,7 +158,7 @@
       if (state.inviteBusy) return;
       state.inviteBusy = true; render();
       try {
-        const r = await call("POST", "/api/admin/invites", { name: state.inviteName.trim() });
+        const r = await call("POST", "/api/admin/invites", { name: state.inviteName.trim(), theme: state.inviteTheme });
         state.invites.unshift(r.invite); state.freshInvite = r.invite.token; state.inviteName = "";
         toast("Lien de création prêt : copiez-le et envoyez-le.");
       } catch (err) { toast(err.message); }

@@ -13,6 +13,18 @@ Chaque liste a son propre mot de passe, généré à la création.
 2. Cette personne ouvre le lien et remplit le formulaire : nom de la liste, titre d'accueil, sous-titre et image.
 3. Elle obtient le **lien de diffusion** de sa liste, à envoyer à ses proches, son **lien d'édition** (`…/edit`) et son **mot de passe**, affiché une seule fois.
 
+### Thèmes
+
+Chaque liste a un thème, choisi par l'administrateur sur le lien de création, puis modifiable à tout moment depuis `/admin` :
+
+| Thème | Décorations sur l'image | Guirlande | Section des cadeaux | Titre d'accueil proposé |
+| --- | --- | --- | --- | --- |
+| Noël | boules | boules, cadeaux, sucres d'orge, sapin | À mettre dans la hotte | Ma liste au *Père Noël* |
+| Anniversaire | gâteaux à bougie | gâteaux, bougies, cadeaux | Pour souffler les bougies | Mon *anniversaire* approche |
+| Mariage | alliances | alliances, cadeaux, cœurs | Pour les jeunes mariés | Notre liste de *mariage* |
+
+Changer le thème d'une liste ne touche pas à son titre d'accueil, qui reste celui choisi par son propriétaire. Les listes créées avant les thèmes sont en thème Noël.
+
 Un lien de création ne sert qu'une fois et expire au bout de `INVITE_DAYS` jours (30 par défaut). L'administrateur voit les liens en attente et peut les révoquer.
 
 ## Les pages
