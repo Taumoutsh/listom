@@ -94,7 +94,8 @@
   }
 
   // ---- Charms over the list's picture (in colour, viewBox 0 0 120 120) -----------
-  // Each hangs from a string at x=14 (left) and x=106 (right).
+  // Each hangs from a string at x=14 (left) and x=106 (right), and sways
+  // gently (classes "bauble" / "bauble b2", see styles.css).
   const string = (x, len) => '<path d="M' + x + " -6v" + len + '" stroke="var(--muted)" stroke-width="1.5"/>';
   const CHARMS = {
     noel:
@@ -102,17 +103,17 @@
       '<g class="bauble b2">' + string(106, 26) + '<rect x="102" y="19" width="8" height="5" rx="1" fill="#C9A227"/><circle cx="106" cy="32" r="8" fill="#E5B54C"/><path d="M101 29q5-4 10 0" stroke="#fff" stroke-width="1.5" fill="none" opacity=".7"/></g>',
     // A pink-iced cake on the left, a smaller golden one on the right, each with a lit candle.
     anniversaire:
-      '<g>' + string(14, 12) + '<g transform="translate(14 18.5) scale(1.3) translate(-14 -18.5)"><path d="M14 8.5 c2 2.4 2 4.2 0 5 c-2 -0.8 -2 -2.6 0 -5z" fill="#F59F00"/><rect x="13" y="13.5" width="2" height="5" rx=".6" fill="#E5B54C"/>' +
+      '<g class="bauble">' + string(14, 12) + '<g transform="translate(14 18.5) scale(1.3) translate(-14 -18.5)"><path d="M14 8.5 c2 2.4 2 4.2 0 5 c-2 -0.8 -2 -2.6 0 -5z" fill="#F59F00"/><rect x="13" y="13.5" width="2" height="5" rx=".6" fill="#E5B54C"/>' +
         '<rect x="4" y="18.5" width="20" height="13" rx="2.5" fill="#F4D9B5"/><path d="M4 21.5 q2.5 3 5 0 t5 0 t5 0 t5 0 V20.5 a2.5 2.5 0 0 0 -2.5 -2 H6.5 a2.5 2.5 0 0 0 -2.5 2 z" fill="#D6336C"/>' +
         '<rect x="2" y="31" width="24" height="2.4" rx="1.2" fill="#C9A227"/></g></g>' +
-      '<g>' + string(106, 18.5) + '<g transform="translate(106 23.5) scale(1.3) translate(-106 -23.5)"><path d="M106 15 c1.7 2 1.7 3.6 0 4.3 c-1.7 -0.7 -1.7 -2.3 0 -4.3z" fill="#F59F00"/><rect x="105.2" y="19.3" width="1.6" height="4.2" rx=".5" fill="#D6336C"/>' +
+      '<g class="bauble b2">' + string(106, 18.5) + '<g transform="translate(106 23.5) scale(1.3) translate(-106 -23.5)"><path d="M106 15 c1.7 2 1.7 3.6 0 4.3 c-1.7 -0.7 -1.7 -2.3 0 -4.3z" fill="#F59F00"/><rect x="105.2" y="19.3" width="1.6" height="4.2" rx=".5" fill="#D6336C"/>' +
         '<rect x="98.5" y="23.5" width="15" height="10" rx="2" fill="#F4D9B5"/><path d="M98.5 26 q1.9 2.4 3.75 0 t3.75 0 t3.75 0 t3.75 0 V25.5 a2 2 0 0 0 -2 -2 H100.5 a2 2 0 0 0 -2 2 z" fill="#E5B54C"/>' +
         '<rect x="97" y="33" width="18" height="2" rx="1" fill="#C9A227"/></g></g>',
     // Two golden interlaced rings on the left, a single ring with its stone on the right.
     mariage:
-      '<g>' + string(14, 13) + '<g transform="translate(14 17) scale(1.3) translate(-14 -17)"><circle cx="10" cy="24" r="6.5" stroke="#C9A227" stroke-width="2.6" fill="none"/><circle cx="18" cy="24" r="6.5" stroke="#E5B54C" stroke-width="2.6" fill="none"/>' +
+      '<g class="bauble">' + string(14, 13) + '<g transform="translate(14 17) scale(1.3) translate(-14 -17)"><circle cx="10" cy="24" r="6.5" stroke="#C9A227" stroke-width="2.6" fill="none"/><circle cx="18" cy="24" r="6.5" stroke="#E5B54C" stroke-width="2.6" fill="none"/>' +
         '<path d="M14 9 l2.2 2.4 -2.2 2.4 -2.2 -2.4z" fill="#D6336C"/></g></g>' +
-      '<g>' + string(106, 19.5) + '<g transform="translate(106 22) scale(1.3) translate(-106 -22)"><path d="M106 15.5 l2.6 2.6 -2.6 2.6 -2.6 -2.6z" fill="#E8E4F5" stroke="#B3AFC0" stroke-width=".8"/>' +
+      '<g class="bauble b2">' + string(106, 19.5) + '<g transform="translate(106 22) scale(1.3) translate(-106 -22)"><path d="M106 15.5 l2.6 2.6 -2.6 2.6 -2.6 -2.6z" fill="#E8E4F5" stroke="#B3AFC0" stroke-width=".8"/>' +
         '<circle cx="106" cy="28" r="6.5" stroke="#E5B54C" stroke-width="2.6" fill="none"/></g></g>'
   };
   const charms = (theme) => '<svg class="baubles" viewBox="0 0 120 120" aria-hidden="true">' + (CHARMS[theme] || CHARMS.noel) + "</svg>";
